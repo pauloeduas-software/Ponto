@@ -8,8 +8,10 @@ import {
   ScrollRestoration,
   Link,
   useLocation,
-  useRouteLoaderData
+  useRouteLoaderData,
+  useNavigation
 } from "react-router";
+import { useEffect, useState, useMemo } from "react";
 import { 
   Clock, 
   Shield, 
@@ -24,6 +26,12 @@ export async function loader({ request }: { request: Request }) {
   return { user };
 }
 
+// Otimização: O root só revalida se houver mudança de página ou login/logout
+// Evita que o auto-sync da Home fique recarregando os dados do usuário logado
+export function shouldRevalidate() {
+  return false; 
+}
+
 export const links = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
@@ -31,9 +39,15 @@ export const links = () => [
     href: "https://fonts.gstatic.com",
     crossOrigin: "anonymous" as const,
   },
+  // Preload: o browser busca a fonte antes mesmo de processar o CSS
+  {
+    rel: "preload",
+    href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap",
+    as: "style",
+  },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap",
   },
   { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
 ];
@@ -44,36 +58,61 @@ function Sidebar({ user }: { user: any }) {
   
   return (
     <aside className="sidebar">
-      <Link to="/" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
-        <Clock size={32} />
+      <Link to="/" prefetch="intent" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
+        <Clock size={24} />
       </Link>
       
       {user?.role === 'admin' && (
-        <Link to="/admin" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
-          <Shield size={32} />
+        <Link to="/admin" prefetch="intent" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
+          <Shield size={24} />
         </Link>
       )}
 
-      <Link to="/escala" className={`sidebar-link ${path === '/escala' ? 'active' : ''}`} title="Escala">
-        <CalendarClock size={32} />
+      <Link to="/escala" prefetch="intent" className={`sidebar-link ${path === '/escala' ? 'active' : ''}`} title="Escala">
+        <CalendarClock size={24} />
       </Link>
 
-      <Link to="/dashboard" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
-        <LayoutDashboard size={32} />
+      <Link to="/dashboard" prefetch="intent" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
+        <LayoutDashboard size={24} />
       </Link>
 
-      <Link to="/perfil" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
+      <Link to="/perfil" prefetch="intent" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
         {user?.avatarUrl ? (
           <img 
             src={user.avatarUrl} 
             alt="Perfil" 
-            style={{ width: '32px', height: '32px', borderRadius: '10px', objectFit: 'cover' }} 
+            style={{ width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover' }} 
           />
         ) : (
-          <UserIcon size={32} />
+          <UserIcon size={24} />
         )}
       </Link>
     </aside>
+  );
+}
+
+function ProgressBar() {
+  const navigation = useNavigation();
+  const active = navigation.state !== "idle";
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "3px",
+        zIndex: 9999,
+        transition: "transform 200ms ease-in-out, opacity 200ms",
+        opacity: active ? 1 : 0,
+        transform: `scaleX(${active ? 1 : 0})`,
+        transformOrigin: "left",
+        background: "linear-gradient(90deg, var(--primary) 0%, #818cf8 100%)",
+        boxShadow: "0 0 8px var(--primary)",
+        pointerEvents: "none",
+      }}
+    />
   );
 }
 
@@ -87,11 +126,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="pt-BR">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#030712" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <Meta />
         <Links />
       </head>
       <body>
+        <ProgressBar />
         {!isLoginPage && <Sidebar user={data?.user} />}
         {children}
         <ScrollRestoration />

@@ -12,7 +12,7 @@ export const sessionStorage = createCookieSessionStorage({
     name: "ponto_session",
     secure: process.env.NODE_ENV === "production",
     secrets: [sessionSecret],
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30, // 30 dias
     httpOnly: true,
