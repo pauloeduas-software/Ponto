@@ -10,11 +10,18 @@ import {
   User as UserIcon
 } from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
+import type { ShouldRevalidateFunction } from "react-router";
 import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
 import { type Shift } from "../types";
 import { getDaysInMonth } from "../utils/calendar";
 import { Modal } from "../components/Modal";
+
+// Só rebusca dados do servidor quando a própria action da escala for executada
+export const shouldRevalidate: ShouldRevalidateFunction = ({ formAction, defaultShouldRevalidate }) => {
+  if (formAction === "/escala") return true;
+  return defaultShouldRevalidate;
+};
 
 export async function loader({ request }: { request: Request }) {
   await requireUserId(request);
@@ -76,13 +83,13 @@ export default function Escala() {
     setSelectedDateStr(dateStr);
     if (selectedUserId === "todos") {
       setIsModalOpen(true);
-    } else {
+    } else if ((user as any)?.role === 'admin') { // Apenas admins podem alternar dias
       toggleDay(dateStr);
     }
   };
 
   const toggleDay = (dateStr: string) => {
-    if (selectedUserId === "todos") return;
+    if (selectedUserId === "todos" || (user as any)?.role !== 'admin') return;
     
     let newEscala;
     const exists = escala.find(s => s.userId === selectedUserId && s.date === dateStr);
@@ -146,6 +153,23 @@ export default function Escala() {
             <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
           </div>
         </div>
+
+        {(user as any)?.role !== 'admin' && (
+          <div style={{
+            padding: '8px 12px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: '10px',
+            fontSize: '0.8rem',
+            color: 'var(--text-muted)',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <XCircle size={14} /> Modo Visualização (Apenas administradores podem editar)
+          </div>
+        )}
 
         <div className="input-group" style={{marginBottom: '20px'}}>
           <div className="label-container">
@@ -231,7 +255,8 @@ export default function Escala() {
                 onClick={() => handleDayClick(d.dateStr)}
                 style={{
                   background: isScheduled ? 'rgba(16, 185, 129, 0.15)' : '',
-                  borderColor: isScheduled ? 'var(--success)' : ''
+                  borderColor: isScheduled ? 'var(--success)' : '',
+                  cursor: (user as any)?.role === 'admin' ? 'pointer' : 'default'
                 }}
               >
                 {d.day}

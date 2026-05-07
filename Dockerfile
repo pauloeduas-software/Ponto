@@ -4,9 +4,10 @@ WORKDIR /app
 
 # Estágio de instalação de dependências
 FROM base AS install
-# Instalamos dependências para compilar better-sqlite3
-RUN apt-get update && apt-get install -y python3 make g++ 
-COPY package.json package-lock.json* ./
+# Dependências para compilar better-sqlite3
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+COPY package.json ./
 RUN npm install
 
 # Estágio de build
@@ -15,10 +16,19 @@ COPY --from=install /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# Imagem final de produção
+# Instalação apenas de dependências de produção (sem devDependencies)
+FROM base AS production-deps
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+COPY package.json ./
+RUN npm install --omit=dev
+
+# Imagem final de produção (mínima)
 FROM node:20-slim AS release
 WORKDIR /app
-COPY --from=install /app/node_modules ./node_modules
+
+# Copia apenas dependências de produção (sem TypeScript, Vite, Tailwind, etc.)
+COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=build /app/build ./build
 COPY --from=build /app/package.json ./package.json
 

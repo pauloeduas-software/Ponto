@@ -13,6 +13,19 @@ if (!fs.existsSync(dbDir)) {
 
 export const db = new Database(dbPath);
 
+// --- Otimizações de Performance do SQLite ---
+// WAL: Permite leituras e escritas simultâneas (essencial para múltiplos usuários)
+db.pragma("journal_mode = WAL");
+// Cache de 4MB em memória para evitar leituras repetidas do disco
+db.pragma("cache_size = -4000");
+// Tabelas temporárias ficam na memória RAM (mais rápido que disco)
+db.pragma("temp_store = MEMORY");
+// Memória mapeada de 128MB para acesso ultrarrápido ao banco
+db.pragma("mmap_size = 134217728");
+// Sincronização balanceada: rápido e seguro (NORMAL vs FULL)
+db.pragma("synchronous = NORMAL");
+
+
 // Inicialização das tabelas do banco de dados
 db.exec(`
   CREATE TABLE IF NOT EXISTS User (
@@ -52,3 +65,8 @@ db.exec(`
     UNIQUE(userId, date)
   )
 `);
+
+// ÍNDICES EXTRAS PARA PERFORMANCE (Admin/Dashboard)
+db.exec("CREATE INDEX IF NOT EXISTS idx_punch_date ON PunchRecord(date)");
+db.exec("CREATE INDEX IF NOT EXISTS idx_shift_date ON Shift(date)");
+
