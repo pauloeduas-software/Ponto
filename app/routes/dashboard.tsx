@@ -121,19 +121,13 @@ export default function Dashboard() {
   };
 
   const updatePunch = (index: number, value: string) => {
-    let newPunches = [...editPunches];
+    const newPunches = [...editPunches];
     newPunches[index] = value;
-    
-    // Cascata: Se apagar um valor, limpa tudo que vem DEPOIS dele
-    if (value === "") {
-      newPunches = newPunches.slice(0, index + 1);
-    }
-    
     setEditPunches(newPunches);
   };
 
   const handleSaveEdit = () => {
-    // Limpa batidas vazias no final antes de salvar
+    // Limpa campos vazios apenas do FINAL para remover colunas não utilizadas
     let cleanedPunches = [...editPunches];
     while (cleanedPunches.length > 0 && cleanedPunches[cleanedPunches.length - 1] === "") {
       cleanedPunches.pop();
@@ -228,7 +222,32 @@ export default function Dashboard() {
                     <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>Meta deste Dia</div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Alterar meta apenas para esta data</div>
                   </div>
-                  <input type="time" value={editGoal} onChange={(e) => setEditGoal(e.target.value)} style={{ width: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '10px', padding: '6px 10px', color: 'white', fontWeight: '700', textAlign: 'center' }} />
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <input 
+                      type="text"
+                      inputMode="numeric"
+                      value={editGoal}
+                      maxLength={5}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/[^0-9]/g, "");
+                        let h = digits.slice(0, 2); let m = digits.slice(2, 4);
+                        if (h.length === 2 && parseInt(h) > 23) h = "23";
+                        if (m.length === 2 && parseInt(m) > 59) m = "59";
+                        setEditGoal(digits.length > 2 ? h + ":" + m : h);
+                      }}
+                      style={{
+                        width: '100px',
+                        background: 'rgba(0,0,0,0.3)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: '10px',
+                        padding: '6px 30px 6px 10px',
+                        color: 'white',
+                        fontWeight: '700',
+                        textAlign: 'center'
+                      }}
+                    />
+                    <Clock size={14} color="white" style={{ position: 'absolute', right: '10px', opacity: 0.6 }} />
+                  </div>
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                 {(() => {

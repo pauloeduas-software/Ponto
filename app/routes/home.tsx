@@ -153,24 +153,24 @@ export default function Home() {
   }, [punches, dailyGoal]);
 
   const savePunches = (newPunches: string[], goalValue: string) => {
+    // Limpa campos vazios apenas do FINAL da lista para não salvar colunas inúteis
+    let cleanedPunches = [...newPunches];
+    while (cleanedPunches.length > 0 && cleanedPunches[cleanedPunches.length - 1] === "") {
+      cleanedPunches.pop();
+    }
+
     let totalMins = 0;
     let lastEntryMins = -1;
-    for (let i = 0; i < newPunches.length; i += 2) {
-      if (newPunches[i] && newPunches[i + 1]) {
-        const start = timeToMinutes(newPunches[i]);
-        const end = timeToMinutes(newPunches[i + 1]);
+    for (let i = 0; i < cleanedPunches.length; i += 2) {
+      if (cleanedPunches[i] && cleanedPunches[i + 1]) {
+        const start = timeToMinutes(cleanedPunches[i]);
+        const end = timeToMinutes(cleanedPunches[i + 1]);
         if (start >= lastEntryMins && end >= start) {
           totalMins += (end - start);
           lastEntryMins = start;
         }
       }
     }
-    // Limpa batidas vazias no final antes de salvar
-    let cleanedPunches = [...newPunches];
-    while (cleanedPunches.length > 0 && cleanedPunches[cleanedPunches.length - 1] === "") {
-      cleanedPunches.pop();
-    }
-
     const diffMins = totalMins - timeToMinutes(goalValue);
 
     fetcher.submit(
@@ -192,14 +192,8 @@ export default function Home() {
   };
 
   const updatePunch = (index: number, value: string) => {
-    let newPunches = [...punches];
+    const newPunches = [...punches];
     newPunches[index] = value;
-    
-    // Cascata: Se apagar um valor, limpa tudo que vem DEPOIS dele
-    if (value === "") {
-      newPunches = newPunches.slice(0, index + 1);
-    }
-    
     setPunches(newPunches);
   };
 
@@ -249,22 +243,33 @@ export default function Home() {
                 <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>Meta do Dia</div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Apenas para hoje</div>
               </div>
-              <input 
-                type="time" 
-                value={dailyGoal}
-                onChange={(e) => setDailyGoal(e.target.value)}
-                style={{
-                  width: '100px',
-                  background: 'rgba(0,0,0,0.3)',
-                  border: '1px solid var(--glass-border)',
-                  borderRadius: '10px',
-                  padding: '6px 10px',
-                  color: 'white',
-                  fontWeight: '700',
-                  textAlign: 'center'
-                }}
-              />
-            </div>
+               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                 <input 
+                   type="text"
+                   inputMode="numeric"
+                   value={dailyGoal}
+                   maxLength={5}
+                   onChange={(e) => {
+                     const digits = e.target.value.replace(/[^0-9]/g, "");
+                     let h = digits.slice(0, 2); let m = digits.slice(2, 4);
+                     if (h.length === 2 && parseInt(h) > 23) h = "23";
+                     if (m.length === 2 && parseInt(m) > 59) m = "59";
+                     setDailyGoal(digits.length > 2 ? h + ":" + m : h);
+                   }}
+                   style={{
+                     width: '100px',
+                     background: 'rgba(0,0,0,0.3)',
+                     border: '1px solid var(--glass-border)',
+                     borderRadius: '10px',
+                     padding: '6px 30px 6px 10px', // Espaço para o ícone na direita
+                     color: 'white',
+                     fontWeight: '700',
+                     textAlign: 'center'
+                   }}
+                 />
+                 <Clock size={14} color="white" style={{ position: 'absolute', right: '10px', opacity: 0.6 }} />
+               </div>
+             </div>
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
