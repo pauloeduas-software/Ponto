@@ -393,18 +393,23 @@ input:focus {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .modal-content {
   background: var(--card-bg);
   border: 1px solid var(--glass-border);
   border-radius: 24px;
-  width: 90%;
-  max-width: 450px;
+  width: 100%;
+  max-width: 480px;
   padding: 32px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
   animation: modalIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  position: relative; /* For absolute close button */
+  position: relative;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
 }
 
 .btn-close {
@@ -445,12 +450,20 @@ input:focus {
 }
 
 @media (max-width: 600px) {
+  .modal-overlay {
+    padding: 0;
+  }
   .modal-content {
     height: 100dvh;
+    max-height: 100dvh;
     max-width: 100%;
     border-radius: 0;
     border: none;
-    padding: 24px 16px;
+    padding: 60px 16px 24px;
+  }
+  .btn-close {
+    top: 16px;
+    right: 16px;
   }
 }
 
@@ -487,11 +500,8 @@ input:focus {
 
 /* Dashboard & Calendar */
 .modal-content.large {
-  max-width: 550px; /* Even smaller */
+  max-width: 700px;
   width: 95%;
-  padding: 20px;
-  max-height: 90vh; /* Ensure it fits vertically */
-  overflow-y: auto; /* Enable scrolling */
 }
 
 .calendar-header h2 {

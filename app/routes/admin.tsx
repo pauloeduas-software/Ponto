@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useLoaderData } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
-import { minutesToTime } from "../utils/time";
+import { minutesToHHMM } from "../utils/time";
 import { getDaysInMonth } from "../utils/calendar";
 import { Modal } from "../components/Modal";
 import { db } from "../db.server";
@@ -43,8 +43,10 @@ export async function loader({ request }: { request: Request }) {
       workMins: r.workMins,
       diffMins: r.diffMins,
       isOvertime: r.isOvertime === 1,
-      worked: minutesToTime(r.workMins),
-      diff: minutesToTime(Math.abs(r.diffMins))
+      goalMins: r.goalMins || 480,
+      goal: minutesToHHMM(r.goalMins || 480),
+      worked: minutesToHHMM(r.workMins),
+      diff: minutesToHHMM(Math.abs(r.diffMins))
     });
   });
 
@@ -56,7 +58,7 @@ export default function Admin() {
   
   const [selectedUserId, setSelectedUserId] = useState<string>("todos");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDateStr, setSelectedDateStr] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDateStr, setSelectedDateStr] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }));
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
@@ -212,10 +214,11 @@ export default function Admin() {
         onClose={() => setIsModalOpen(false)}
         title={new Date(selectedDateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
         icon={<CalendarIcon size={20} style={{ color: 'var(--primary)' }} />}
+        className="large"
       >
         {selectedUserId === "todos" ? (
           selectedDayGlobalData && selectedDayGlobalData.length > 0 ? (
-            <div className="history-list" style={{ overflowY: 'auto', paddingRight: '4px' }}>
+            <div className="history-list" style={{ paddingRight: '4px' }}>
               {selectedDayGlobalData.map(record => (
                 <div key={record.user.id} style={{
                   padding: '16px',
@@ -279,14 +282,18 @@ export default function Admin() {
                   </div>
 
                   {/* Totais */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                    <div className="info-box" style={{ padding: '10px' }}>
+                      <span className="info-label">Meta</span>
+                      <span className="info-value" style={{ fontSize: '0.8rem' }}>{record.data.goal}</span>
+                    </div>
                     <div className="info-box" style={{ padding: '10px' }}>
                       <span className="info-label">Trabalhado</span>
-                      <span className="info-value" style={{ fontSize: '0.9rem' }}>{record.data.worked}</span>
+                      <span className="info-value" style={{ fontSize: '0.8rem' }}>{record.data.worked}</span>
                     </div>
                     <div className="info-box" style={{ padding: '10px' }}>
                       <span className="info-label">Saldo</span>
-                      <span className={`info-value ${record.data.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.9rem' }}>
+                      <span className={`info-value ${record.data.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.8rem' }}>
                         {record.data.isOvertime ? "+" : "-"}{record.data.diff}
                       </span>
                     </div>

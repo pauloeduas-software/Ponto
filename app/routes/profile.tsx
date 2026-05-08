@@ -28,11 +28,6 @@ export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
   const actionType = formData.get("action");
 
-  if (actionType === "updateGoal") {
-    const goal = formData.get("goal") as string;
-    db.prepare("UPDATE User SET goal = ? WHERE id = ?").run(goal, userId);
-    return { success: true, message: "Meta atualizada!" };
-  }
 
   if (actionType === "updateAvatar") {
     const avatarData = formData.get("avatar") as string;
@@ -57,12 +52,6 @@ export default function Profile() {
   const [goal, setGoal] = useState((user as any).goal || "08:00");
   const [avatarPreview, setAvatarPreview] = useState((user as any).avatarUrl);
 
-  const handleSaveGoal = () => {
-    fetcher.submit(
-      { action: "updateGoal", goal },
-      { method: "post" }
-    );
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -195,54 +184,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Seção de Configurações */}
-          <div>
-            <label style={{fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '16px', display: 'block', textTransform: 'uppercase', letterSpacing: '1px'}}>Configurações de Ponto</label>
-            <div className="info-box" style={{padding: '24px', borderRadius: '24px'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
-                <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-                  <div style={{
-                    background: 'rgba(99, 102, 241, 0.1)',
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--primary)'
-                  }}>
-                    <Clock size={22} />
-                  </div>
-                  <div>
-                    <div style={{fontWeight: '700', fontSize: '1rem'}}>Meta de Horas Diárias</div>
-                    <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Utilizado para calcular o saldo do dia</div>
-                  </div>
-                </div>
-                <input 
-                  type="time" 
-                  value={goal} 
-                  onChange={(e) => {
-                    setGoal(e.target.value);
-                    fetcher.submit(
-                      { action: "updateGoal", goal: e.target.value },
-                      { method: "post" }
-                    );
-                  }}
-                  style={{
-                    width: '120px', 
-                    textAlign: 'center',
-                    background: 'rgba(0,0,0,0.3)',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: '12px',
-                    padding: '10px',
-                    color: 'white',
-                    fontSize: '1.1rem',
-                    fontWeight: '700'
-                  }}
-                />
-              </div>
-            </div>
-          </div>
 
           {/* Seção de Sair */}
           <div style={{marginTop: '12px'}}>

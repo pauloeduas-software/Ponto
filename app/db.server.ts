@@ -47,11 +47,19 @@ db.exec(`
     workMins INTEGER DEFAULT 0,
     diffMins INTEGER DEFAULT 0,
     isOvertime BOOLEAN DEFAULT 0,
+    goalMins INTEGER DEFAULT 480,
     userId TEXT NOT NULL,
     FOREIGN KEY (userId) REFERENCES User(id),
     UNIQUE(userId, date)
   )
 `);
+
+// MIGRATIONS (Executa apenas se necessário)
+try {
+  db.exec("ALTER TABLE PunchRecord ADD COLUMN goalMins INTEGER DEFAULT 480");
+} catch (e) {
+  // Coluna já existe ou erro na migração
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS Shift (

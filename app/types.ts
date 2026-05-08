@@ -19,6 +19,8 @@ export interface SavedDay {
   isOvertime: boolean;
   workMins: number;
   diffMins: number;
+  goalMins: number;
+  goal: string;
   punches?: string[];
   entry?: string;
   exit?: string;

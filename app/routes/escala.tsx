@@ -276,6 +276,7 @@ export default function Escala() {
         onClose={() => setIsModalOpen(false)} 
         title={new Date(selectedDateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
         icon={<CalendarIcon size={20} style={{color: 'var(--primary)'}} />}
+        className="large"
       >
         <div className="history-list">
           <p style={{fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px'}}>Colaboradores escalados para este dia:</p>

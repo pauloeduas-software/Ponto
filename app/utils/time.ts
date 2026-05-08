@@ -10,3 +10,10 @@ export const minutesToTime = (totalMins: number): string => {
   const mins = absMins % 60;
   return `${hrs}h ${mins.toString().padStart(2, "0")}m`;
 };
+
+export const minutesToHHMM = (totalMins: number): string => {
+  const absMins = Math.abs(totalMins);
+  const hrs = Math.floor(absMins / 60);
+  const mins = absMins % 60;
+  return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+};
