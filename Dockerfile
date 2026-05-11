@@ -30,6 +30,7 @@ WORKDIR /app
 # Copia apenas dependências de produção (sem TypeScript, Vite, Tailwind, etc.)
 COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=build /app/build ./build
+COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
 
 # Garante que a pasta data exista para o volume do Dokploy

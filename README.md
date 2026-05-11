@@ -7,23 +7,33 @@
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
 [![Lucide React](https://img.shields.io/badge/Lucide-Icons-F72C5B?logo=lucide)](https://lucide.dev)
 
-O **Ponto** é uma solução corporativa para controle de jornada de trabalho e escala. Com uma interface moderna em **Glassmorphism**, o sistema oferece uma experiência fluida para registro de horários, gestão de escalas e monitoramento administrativo em tempo real.
+O **Ponto** é uma solução corporativa robusta para controle de jornada de trabalho e gestão de escalas em múltiplas equipes. Com uma interface moderna baseada em **Glassmorphism**, o sistema oferece uma experiência premium e intuitiva para colaboradores e gerentes.
 
 ---
 
 ## ✨ Funcionalidades Principais
 
-- **⏱️ Registro de Ponto Inteligente:** Interface intuitiva para batimento de ponto com detecção automática de virada de dia (meia-noite) e cálculo de saldo (extra/negativo) em tempo real. Inclui suporte a múltiplos períodos e "Registro Manual" para ajustes rápidos.
-- **📅 Escala Mensal Dinâmica:** Sistema de planejamento de equipe com interface de calendário interativa. Permite alternar escalas de trabalho e folgas com **Salvamento Automático**, eliminando a necessidade de botões de confirmação.
-- **🛡️ Painel Administrativo:** Central de monitoramento para gestores com visão consolidada de toda a equipe. Inclui busca por colaborador, calendários de alta densidade com avatares e modais de relatório detalhados.
-- **👤 Perfil e Personalização:** Gestão de identidade com upload de fotos (Avatar) via Base64, edição de nome de exibição e configuração de **Meta de Horas Diárias** personalizada para cada usuario.
-- **📊 Histórico e Dashboard:** Painel individual de estatísticas mensais com análise de saldo acumulado. Permite a edição e **exclusão granular** de batidas específicas, garantindo flexibilidade na correção de registros.
-- **🎨 Design System Premium:** Interface construída com CSS Vanilla puro, utilizando técnicas avançadas de **Glassmorphism**, modo escuro nativo, micro-animações suaves e design responsivo otimizado.
-- **🔐 Segurança e Hardening:** 
-    - Senhas criptografadas com `bcrypt`.
-    - Sessões protegidas com cookies `HttpOnly` e política `SameSite: Strict`.
-    - Controle de acesso (RBAC) validando permissões de Admin vs Funcionário diretamente no servidor.
-    - Proteção contra SQL Injection via consultas preparadas (Prepared Statements).
+- **⏱️ Registro de Ponto Inteligente:** Interface intuitiva com detecção automática de virada de dia e cálculo de saldo (extra/negativo) em tempo real. Suporte a múltiplos períodos e registro manual.
+- **📊 Histórico e Dashboard:** Painel individual de estatísticas mensais com análise de saldo acumulado. Permite a edição e exclusão granular de batidas específicas, garantindo flexibilidade na correção de registros.
+- **📅 Escala Mensal Dinâmica:** Sistema de planejamento de equipe com interface de calendário interativa. Permite alternar escalas de trabalho e folgas com Salvamento Automático, eliminando a necessidade de botões de confirmação.
+- **👤 Perfil Consolidado:** Badges dinâmicos que mostram Cargo e Equipe. Personalização de Avatar via Base64 e Meta de Horas individualizada.
+- **🎨 UI/UX Premium:** Design consistente em todas as rotas (Histórico, Relatórios, Escala) com navegação temporal fixa e alinhada, evitando quebras de layout.
+- **🛡️ Painel de Gestão Avançado:** 
+    - Criação e organização de equipes.
+    - **Reset de Senha:** Administradores podem redefinir senhas de usuários diretamente pela interface.
+    - **Exclusão 
+- **🏢 Estrutura Hierárquica (Multi-Team):** Organização completa por equipes. Suporte a diferentes níveis de acesso:
+    - **Super:** Visão global de todas as equipes, gestão de cargos e controle total do sistema.
+    - **Gerente:** Gestão focada exclusivamente nos seus subordinados.
+    - **Funcionário:** Registro individual e consulta de escala própria.
+de Contas:** Remoção permanente de usuários com limpeza automática de registros vinculados.
+- **🔐 Segurança e Hardening:**
+   - Senhas criptografadas com bcrypt.
+   - Sessões protegidas com cookies HttpOnly e política SameSite: Strict.
+   - Controle de acesso (RBAC) validando permissões de Admin vs Funcionário diretamente no servidor.
+   - Proteção contra SQL Injection via consultas preparadas (Prepared Statements).
+
+
 
 ---
 
@@ -35,8 +45,7 @@ O **Ponto** é uma solução corporativa para controle de jornada de trabalho e 
 | **Ambiente** | Node.js / Runtime compatível |
 | **Linguagem** | TypeScript |
 | **Banco de Dados** | SQLite (better-sqlite3) |
-| **Estilização** | CSS Vanilla (Glassmorphism & Flexbox/Grid) |
-| **Segurança** | Bcryptjs (Hash) & Cookie Session Storage |
+| **Segurança** | Bcryptjs (Criptografia de Senhas) & Cookie Session storage |
 | **Ícones**| Lucide React |
 
 ---
@@ -45,25 +54,20 @@ O **Ponto** é uma solução corporativa para controle de jornada de trabalho e 
 
 ```text
 ├── app/
-│   ├── components/        # Componentes UI (Ex: Modal, StatCard)
-│   ├── routes/            # Rotas e Actions (Home, Admin, Escala, Dashboard, Perfil)
-│   ├── utils/             # Helpers de tempo (Time/Minutes) e lógica de Calendário
-│   ├── db.server.ts       # Inicialização e persistência do SQLite
-│   ├── session.server.ts  # Gestão de Sessão, Cookies e RBAC
-│   ├── root.tsx           # Layout Global e Navegação Lateral
-│   └── types.ts           # Definições de tipos do sistema
-├── data/                  # Diretório persistente do banco de dados (SQLite)
-├── scripts/               # Scripts de utilidade e manutenção
-├── public/                # Ativos estáticos e fontes
-└── Dockerfile             # Configuração para deploy em containers (Dokploy)
+│   ├── components/        # Componentes UI reutilizáveis (Modal, StatCard, etc.)
+│   ├── routes/            # Rotas, Loaders e Actions (Admin, Escala, Management, Profile)
+│   ├── utils/             # Lógica de cálculo de tempo e manipulação de calendário
+│   ├── db.server.ts       # Camada de persistência SQLite
+│   ├── session.server.ts  # Autenticação e proteção de rotas (RBAC)
+│   └── types.ts           # Definições de tipos compartilhados
+├── data/                  # Persistência do banco de dados SQLite
+├── public/                # Ativos estáticos
+└── Dockerfile             # Configuração para deploy conteinerizado
 ```
 
 ---
 
 ## 🏁 Primeiros Passos
-
-### Pré-requisitos
-- **Node.js** (LTS recomendado) instalado.
 
 ### Instalação e Execução
 
@@ -72,24 +76,15 @@ O **Ponto** é uma solução corporativa para controle de jornada de trabalho e 
    npm install
    ```
 
-2. **Inicialize o Banco de Dados**
-   O banco SQLite será criado automaticamente na primeira execução dentro da pasta `/data`.
-
-3. **Inicie o Servidor de Desenvolvimento**
+2. **Inicie o Servidor de Desenvolvimento**
    ```bash
    npm run dev
    ```
 
-4. **Produção (Build)**
+3. **Produção (Build)**
    ```bash
    npm run build
    npm start
    ```
-
----
-
-## 🐋 Deploy (Docker/Dokploy)
-
-O projeto está pronto para deploy em containers. Certifique-se de mapear um **volume** para o diretório `/app/data` para garantir que as informações dos colaboradores não sejam perdidas entre atualizações.
 
 ---

@@ -168,14 +168,14 @@ export default function Dashboard() {
   return (
     <div className="container">
       <div className="card">
-        <div className="header">
+        <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
           <div>
             <h1>Histórico de Ponto</h1>
-            <p className="subtitle">Relatório de {(user as any)?.name}</p>
+            <p className="subtitle" style={{ margin: 0 }}>Relatório de {(user as any)?.name}</p>
           </div>
-          <div className="month-nav">
+          <div className="month-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-            <span style={{fontWeight: '700', textTransform: 'capitalize'}}>
+            <span style={{ fontWeight: '700', textTransform: 'capitalize', textAlign: 'center', minWidth: '130px' }}>
               {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
             </span>
             <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>

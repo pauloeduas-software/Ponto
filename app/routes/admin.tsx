@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
-import { 
-  User as UserIcon, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  User as UserIcon,
+  ChevronLeft,
+  ChevronRight,
   Calendar as CalendarIcon,
   Timer,
   TrendingDown,
   TrendingUp,
-  Filter
+  Filter,
+  Layers
 } from "lucide-react";
 import { useLoaderData } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
@@ -25,14 +26,40 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({ currentUrl, nextUrl
 
 export async function loader({ request }: { request: Request }) {
   await requireUserId(request);
-  const user = await getUser(request);
-  
-  if ((user as any).role !== "admin") {
+  const user = await getUser(request) as any;
+  const url = new URL(request.url);
+  const viewParam = url.searchParams.get("view") || "team";
+
+  if (user.role !== "admin" && user.role !== "manager") {
     throw new Response("Acesso negado", { status: 403 });
   }
 
-  const employees = db.prepare("SELECT id, name, role, avatarUrl FROM User").all() as any[];
-  const allRecords = db.prepare("SELECT * FROM PunchRecord").all() as any[];
+  // Se for Admin e pedir visão de equipe, ou se for Manager (que sempre vê equipe)
+  const isTeamView = viewParam === "team" || user.role === "manager";
+
+  let employeesQuery = `
+    SELECT u.id, u.name, u.role, u.avatarUrl, u.teamId, t.name as teamName 
+    FROM User u 
+    LEFT JOIN Team t ON u.teamId = t.id
+  `;
+  let recordsQuery = "SELECT * FROM PunchRecord";
+  let params: any[] = [];
+
+  if (isTeamView && user.teamId) {
+    employeesQuery += " WHERE u.teamId = ?";
+    recordsQuery = "SELECT r.* FROM PunchRecord r JOIN User u ON r.userId = u.id WHERE u.teamId = ?";
+    params = [user.teamId];
+  }
+
+  const employees = db.prepare(employeesQuery).all(...params) as any[];
+  const allRecords = db.prepare(recordsQuery).all(...params) as any[];
+
+  // Buscar nome da equipe se estiver na visão de equipe
+  let teamName = "Geral";
+  if (isTeamView && user.teamId) {
+    const team = db.prepare("SELECT name FROM Team WHERE id = ?").get(user.teamId) as any;
+    teamName = team?.name || "Equipe";
+  }
 
   const historyData: Record<string, SavedDay[]> = {};
   allRecords.forEach(r => {
@@ -50,12 +77,15 @@ export async function loader({ request }: { request: Request }) {
     });
   });
 
-  return { user, employees, historyData };
+  const teams = db.prepare("SELECT * FROM Team ORDER BY name").all() as any[];
+
+  return { user, employees, historyData, teamName, isTeamView, teams };
 }
 
 export default function Admin() {
-  const { user, employees, historyData } = useLoaderData<typeof loader>();
-  
+  const { user, employees, historyData, teamName, isTeamView, teams } = useLoaderData<typeof loader>();
+
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("todos");
   const [selectedUserId, setSelectedUserId] = useState<string>("todos");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }));
@@ -72,13 +102,18 @@ export default function Admin() {
     setIsModalOpen(true);
   };
 
+  const filteredEmployees = useMemo(() => {
+    if (selectedTeamId === "todos") return employees;
+    return employees.filter(emp => emp.teamId === selectedTeamId);
+  }, [employees, selectedTeamId]);
+
   const selectedDayGlobalData = useMemo(() => {
     if (selectedUserId !== "todos") return null;
-    return employees.map(emp => {
+    return filteredEmployees.map(emp => {
       const dayRecord = (historyData[emp.id] || []).find(h => h.date === selectedDateStr);
       return dayRecord ? { user: emp, data: dayRecord } : null;
     }).filter(r => r !== null) as { user: any, data: SavedDay }[];
-  }, [selectedDateStr, selectedUserId, historyData, employees]);
+  }, [selectedDateStr, selectedUserId, filteredEmployees, historyData]);
 
   const selectedDayUserData = useMemo(() => {
     if (selectedUserId === "todos") return null;
@@ -86,56 +121,94 @@ export default function Admin() {
   }, [selectedDateStr, selectedUserId, historyData]);
 
   const recordCount = (dateStr: string) => {
-    return employees.filter(emp => (historyData[emp.id] || []).some(h => h.date === dateStr)).length;
+    return filteredEmployees.filter(emp => (historyData[emp.id] || []).some(h => h.date === dateStr)).length;
   };
 
   return (
     <div className="container">
       <div className="card">
-
-        {/* Cabeçalho responsivo para mobile */}
-        <div className="header" style={{ flexWrap: 'wrap', gap: '12px' }}>
+        <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
           <div>
-            <h1>Visão Global</h1>
-            <p className="subtitle">Espelhos da Equipe</p>
+            <h1>Relatórios</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '6px' }}>
+              <p className="subtitle" style={{ margin: 0 }}>{!isTeamView ? 'Global' : `Equipe: ${teamName}`}</p>
+              {user.role === 'admin' && (
+                <div className="toggle-container">
+                  <a href="/admin?view=global" className={`view-toggle ${!isTeamView ? 'active' : ''}`}>Global</a>
+                  <a href="/admin?view=team" className={`view-toggle ${isTeamView ? 'active' : ''}`}>Minha Equipe</a>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="month-nav">
+          <div className="month-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-            <span style={{ fontWeight: '700', textTransform: 'capitalize', fontSize: '0.9rem' }}>
+            <span style={{ fontWeight: '700', textTransform: 'capitalize', textAlign: 'center', minWidth: '130px' }}>
               {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
             </span>
             <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
           </div>
         </div>
 
-        {/* Filtro de Colaborador */}
-        <div className="input-group" style={{ marginBottom: '20px' }}>
-          <div className="label-container">
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Filter size={12} /> Filtrar Colaborador
-            </label>
+        {!isTeamView ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+            <div className="input-group">
+              <div className="label-container">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Layers size={12} /> Filtrar Equipe
+                </label>
+              </div>
+              <select
+                value={selectedTeamId}
+                onChange={(e) => {
+                  setSelectedTeamId(e.target.value);
+                  setSelectedUserId("todos");
+                }}
+                className="custom-select"
+              >
+                <option value="todos">Todas as Equipes</option>
+                {teams.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="input-group">
+              <div className="label-container">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Filter size={12} /> Filtrar Colaborador
+                </label>
+              </div>
+              <select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                className="custom-select"
+              >
+                <option value="todos">Todos</option>
+                {filteredEmployees.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <select
-            value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
-            style={{
-              width: '100%',
-              background: 'rgba(0, 0, 0, 0.3)',
-              border: '1px solid var(--glass-border)',
-              borderRadius: '14px',
-              padding: '12px 16px',
-              color: 'white',
-              fontSize: '1rem',
-              appearance: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="todos">Todos (Visão Geral)</option>
-            {employees.map(emp => (
-              <option key={emp.id} value={emp.id}>{emp.name}</option>
-            ))}
-          </select>
-        </div>
+        ) : (
+          <div className="input-group" style={{ marginBottom: '24px' }}>
+            <div className="label-container">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Filter size={12} /> Filtrar Colaborador
+              </label>
+            </div>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="custom-select"
+            >
+              <option value="todos">Toda a Equipe</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Grade do Calendário */}
         <div className="calendar-grid">
@@ -155,7 +228,7 @@ export default function Admin() {
               >
                 {d.day}
                 {selectedUserId === "todos" ? (
-                  recCount > 0 && (
+                  recordCount(d.dateStr) > 0 && (
                     <div style={{
                       display: 'flex',
                       gap: '2px',
@@ -163,8 +236,7 @@ export default function Admin() {
                       justifyContent: 'center',
                       flexWrap: 'wrap'
                     }}>
-                      {/* Avatares compactos para não quebrar o grid no mobile */}
-                      {employees
+                      {filteredEmployees
                         .filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))
                         .slice(0, 2)
                         .map((emp, idx) => (
@@ -185,14 +257,14 @@ export default function Admin() {
                             }
                           </div>
                         ))}
-                      {recCount > 2 && (
+                      {recordCount(d.dateStr) > 2 && (
                         <div style={{
                           fontSize: '0.55rem',
                           color: 'var(--text-muted)',
                           fontWeight: 'bold',
                           lineHeight: '16px'
                         }}>
-                          +{recCount - 2}
+                          +{recordCount(d.dateStr) - 2}
                         </div>
                       )}
                     </div>
@@ -241,7 +313,9 @@ export default function Admin() {
                     </div>
                     <div>
                       <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{record.user.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Resumo de Ponto</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        {record.user.teamName || "Sem Equipe"}
+                      </div>
                     </div>
                   </div>
 
@@ -303,7 +377,7 @@ export default function Admin() {
             </div>
           ) : (
             <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px 0' }}>
-              Ninguém registrou ponto neste dia.
+              Ninguém registrou ponto neste dia para a equipe selecionada.
             </p>
           )
         ) : (
@@ -361,6 +435,52 @@ export default function Admin() {
           )
         )}
       </Modal>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .toggle-container {
+          background: rgba(255, 255, 255, 0.03);
+          padding: 4px;
+          border-radius: 12px;
+          display: flex;
+          gap: 4px;
+          border: 1px solid var(--glass-border);
+        }
+        .view-toggle {
+          padding: 4px 12px;
+          border-radius: 9px;
+          font-size: 0.65rem;
+          font-weight: 700;
+          text-decoration: none;
+          color: var(--text-muted);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .view-toggle.active {
+          background: var(--primary);
+          color: white;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .view-toggle:not(.active):hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: white;
+        }
+        .custom-select {
+          width: 100%;
+          background: rgba(0, 0, 0, 0.3);
+          border: 1px solid var(--glass-border);
+          border-radius: 14px;
+          padding: 12px 16px;
+          color: white;
+          font-size: 0.9rem;
+          appearance: none;
+          cursor: pointer;
+          outline: none;
+          transition: all 0.2s;
+        }
+        .custom-select:focus {
+          border-color: var(--primary);
+          background: rgba(0, 0, 0, 0.4);
+        }
+      `}} />
     </div>
   );
 }

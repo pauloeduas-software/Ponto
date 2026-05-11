@@ -35,7 +35,7 @@ export async function getUser(request: Request) {
   if (!userId) return null;
 
   try {
-    const user = db.prepare("SELECT id, username, name, role, goal, avatarUrl FROM User WHERE id = ?").get(userId);
+    const user = db.prepare("SELECT id, username, name, role, goal, avatarUrl, teamId FROM User WHERE id = ?").get(userId);
     if (!user) return null;
     return user;
   } catch {

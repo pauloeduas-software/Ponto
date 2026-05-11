@@ -1,7 +1,11 @@
 export interface User {
   id: string;
   name: string;
-  role: 'admin' | 'employee';
+  username: string;
+  role: 'admin' | 'manager' | 'employee';
+  teamId?: string;
+  avatarUrl?: string;
+  goal?: string;
 }
 
 export interface Shift {

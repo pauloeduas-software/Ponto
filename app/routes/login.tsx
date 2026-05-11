@@ -18,7 +18,7 @@ export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
   const username = formData.get("username") as string;
   const password = formData.get("password") as string;
-  const name = formData.get("name") as string;
+  const name = (formData.get("name") as string || "").trim();
   const actionType = formData.get("_action");
 
   if (actionType === "register") {

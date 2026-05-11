@@ -5,16 +5,30 @@ import {
   Save,
   Clock,
   Camera,
-  Loader2
+  Loader2,
+  Briefcase,
+  Layers,
+  ChevronRight,
+  ShieldCheck
 } from "lucide-react";
-import { useLoaderData, useFetcher, Form } from "react-router";
+import { useLoaderData, useFetcher, Form, redirect } from "react-router";
 import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
 
 export async function loader({ request }: { request: Request }) {
   await requireUserId(request);
-  const user = await getUser(request);
-  return { user };
+  const user = await getUser(request) as any;
+  if (!user) throw redirect("/login");
+  
+  let team = null;
+  if (user.teamId) {
+    team = db.prepare("SELECT name FROM Team WHERE id = ?").get(user.teamId);
+  }
+
+  return { 
+    user, 
+    team: team as { name: string } | null
+  };
 }
 
 export async function action({ request }: { request: Request }) {
@@ -45,7 +59,7 @@ export async function action({ request }: { request: Request }) {
 }
 
 export default function Profile() {
-  const { user } = useLoaderData<typeof loader>();
+  const { user, team } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -167,22 +181,66 @@ export default function Profile() {
                 />
               </div>
               <p style={{color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '12px'}}>@{ (user as any).username }</p>
-              <div style={{
-                padding: '4px 12px',
-                background: (user as any).role === 'admin' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.05)',
-                borderRadius: '10px',
-                fontSize: '0.75rem',
-                fontWeight: '700',
-                display: 'inline-block',
-                textTransform: 'uppercase',
-                color: (user as any).role === 'admin' ? '#a5b4fc' : 'var(--text-muted)',
-                letterSpacing: '0.5px',
-                border: '1px solid ' + ((user as any).role === 'admin' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.1)')
-              }}>
-                {(user as any).role}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  padding: '4px 12px',
+                  background: (user as any).role === 'admin' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.05)',
+                  borderRadius: '10px',
+                  fontSize: '0.75rem',
+                  fontWeight: '700',
+                  display: 'inline-block',
+                  textTransform: 'uppercase',
+                  color: (user as any).role === 'admin' ? '#a5b4fc' : 'var(--text-muted)',
+                  letterSpacing: '0.5px',
+                  border: '1px solid ' + ((user as any).role === 'admin' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.1)')
+                }}>
+                  {(user as any).role}
+                </div>
+                
+                {team && (
+                  <div style={{ 
+                    padding: '4px 12px',
+                    background: 'rgba(99, 102, 241, 0.05)',
+                    borderRadius: '10px',
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    color: 'var(--primary)',
+                    border: '1px solid rgba(99, 102, 241, 0.2)'
+                  }}>
+                    <Layers size={14} /> {team.name}
+                  </div>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Seção de Gestão (Apenas Super Admin) */}
+          {user.role === 'admin' && (
+            <div style={{
+              padding: '20px',
+              background: 'rgba(99, 102, 241, 0.05)',
+              borderRadius: '20px',
+              border: '1px solid rgba(99, 102, 241, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <h3 style={{ fontSize: '1rem', fontWeight: '700', color: 'white' }}>Administração</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Gerenciar equipes, cargos e acessos.</p>
+              </div>
+              <a href="/gestao" style={{ 
+                padding: '10px 16px', background: 'var(--primary)', 
+                color: 'white', borderRadius: '12px', fontSize: '0.85rem', 
+                fontWeight: '700', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px'
+              }}>
+                Painel de Gestão <ChevronRight size={16} />
+              </a>
+            </div>
+          )}
 
 
           {/* Seção de Sair */}

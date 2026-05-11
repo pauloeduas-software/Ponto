@@ -33,9 +33,19 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     name TEXT,
-    role TEXT DEFAULT 'employee',
+    role TEXT DEFAULT 'employee', -- 'admin', 'manager', 'employee'
     goal TEXT DEFAULT '08:00',
-    avatarUrl TEXT
+    avatarUrl TEXT,
+    teamId TEXT,
+    FOREIGN KEY (teamId) REFERENCES Team(id)
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS Team (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
@@ -59,6 +69,12 @@ try {
   db.exec("ALTER TABLE PunchRecord ADD COLUMN goalMins INTEGER DEFAULT 480");
 } catch (e) {
   // Coluna já existe ou erro na migração
+}
+
+try {
+  db.exec("ALTER TABLE User ADD COLUMN teamId TEXT");
+} catch (e) {
+  // Coluna já existe
 }
 
 db.exec(`

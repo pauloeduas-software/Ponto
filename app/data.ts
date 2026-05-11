@@ -1,7 +1,7 @@
 import { type User, type Shift } from "./types";
 
 export const MOCK_USERS: User[] = [
-  { id: '2', name: 'Meu Usuário', role: 'employee' },
+  { id: '2', name: 'Meu Usuário', username: 'usuario', role: 'employee' },
 ];
 
 export const getHistory = (userId: string) => {
