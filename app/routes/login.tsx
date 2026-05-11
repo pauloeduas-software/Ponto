@@ -16,7 +16,7 @@ import bcrypt from "bcryptjs";
 
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
-  const username = formData.get("username") as string;
+  const username = (formData.get("username") as string || "").trim();
   const password = formData.get("password") as string;
   const name = (formData.get("name") as string || "").trim();
   const actionType = formData.get("_action");

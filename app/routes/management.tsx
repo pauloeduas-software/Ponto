@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Users,
   Plus,
@@ -46,7 +46,21 @@ export async function action({ request }: { request: Request }) {
 
   if (actionType === "createTeam") {
     const name = formData.get("name") as string;
+
+    const existing = db.prepare("SELECT id FROM Team WHERE name = ?").get(name);
+    if (existing) {
+      return { error: "Já existe uma equipe com este nome." };
+    }
+
     db.prepare("INSERT INTO Team (id, name) VALUES (?, ?)").run(crypto.randomUUID(), name);
+    return { success: true };
+  }
+
+  if (actionType === "deleteTeam") {
+    const teamId = formData.get("teamId") as string;
+    // Remove a equipe de todos os usuários vinculados antes de deletar a equipe
+    db.prepare("UPDATE User SET teamId = NULL WHERE teamId = ?").run(teamId);
+    db.prepare("DELETE FROM Team WHERE id = ?").run(teamId);
     return { success: true };
   }
 
@@ -102,6 +116,13 @@ export default function Management() {
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const teamFormRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.success) {
+      teamFormRef.current?.reset();
+    }
+  }, [fetcher.state, fetcher.data]);
 
   return (
     <div className="container">
@@ -116,7 +137,7 @@ export default function Management() {
             style={{ width: 'auto', padding: '12px 20px', background: 'var(--accent-gradient)' }}
             onClick={() => setIsTeamModalOpen(true)}
           >
-            <Plus size={18} /> Nova Equipe
+            <Plus size={18} /> Equipes
           </button>
         </div>
 
@@ -150,12 +171,12 @@ export default function Management() {
                     <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
                       <span style={{
                         fontSize: '0.65rem', padding: '3px 10px', borderRadius: '8px',
-                        background: u.role === 'admin' ? 'rgba(99, 102, 241, 0.2)' : u.role === 'manager' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.05)',
-                        color: u.role === 'admin' ? '#a5b4fc' : u.role === 'manager' ? '#86efac' : 'var(--text-muted)',
-                        border: '1px solid rgba(255,255,255,0.05)',
+                        background: u.role === 'admin' ? 'rgba(168, 85, 247, 0.2)' : u.role === 'manager' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(167, 139, 250, 0.05)',
+                        color: u.role === 'admin' ? '#d8b4fe' : u.role === 'manager' ? '#c4b5fd' : '#a78bfa',
+                        border: u.role === 'admin' ? '1px solid rgba(168, 85, 247, 0.3)' : u.role === 'manager' ? '1px solid rgba(139, 92, 246, 0.2)' : '1px solid rgba(167, 139, 250, 0.1)',
                         textTransform: 'uppercase', fontWeight: '800', letterSpacing: '0.5px'
                       }}>
-                        {u.role === 'manager' ? 'Gerente' : u.role === 'admin' ? 'Super Admin' : 'Funcionário'}
+                        {u.role === 'manager' ? 'Gerente' : u.role === 'admin' ? 'Admin' : 'Funcionário'}
                       </span>
                       {u.teamName && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: '600' }}>
@@ -180,15 +201,81 @@ export default function Management() {
       </div>
 
       {/* Modal Nova Equipe */}
-      <Modal isOpen={isTeamModalOpen} onClose={() => setIsTeamModalOpen(false)} title="Nova Equipe" icon={<Plus size={20} />}>
-        <fetcher.Form method="post" onSubmit={() => setIsTeamModalOpen(false)}>
-          <input type="hidden" name="_action" value="createTeam" />
-          <div className="input-group">
-            <label>Nome da Equipe</label>
-            <input type="text" name="name" required placeholder="Ex: Vendas, TI, Suporte..." autoFocus />
+      <Modal isOpen={isTeamModalOpen} onClose={() => setIsTeamModalOpen(false)} title="Gerenciar Equipes" icon={<Layers size={20} />}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {/* Formulário de Criação (Agora no Topo) */}
+          <fetcher.Form method="post" ref={teamFormRef}>
+            <input type="hidden" name="_action" value="createTeam" />
+            <div className="input-group">
+              <label style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px', display: 'block' }}>Criar Nova Equipe</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input 
+                  type="text" 
+                  name="name" 
+                  required 
+                  placeholder="Ex: Vendas, TI, Suporte..." 
+                  style={{ margin: 0, height: '54px' }} 
+                />
+                <button 
+                  type="submit" 
+                  className="btn-register" 
+                  style={{ 
+                    width: 'auto', 
+                    padding: '0 25px', 
+                    height: '54px', 
+                    margin: 0,
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  Criar
+                </button>
+              </div>
+              {fetcher.data?.error && (
+                <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '10px', fontWeight: '600' }}>
+                  {fetcher.data.error}
+                </p>
+              )}
+            </div>
+          </fetcher.Form>
+
+          {/* Lista de Equipes Existentes */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px' }}>
+            <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '4px' }}>Equipes Atuais</h3>
+            {teams.length === 0 ? (
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}>Nenhuma equipe cadastrada.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {teams.map(t => (
+                  <div key={t.id} style={{
+                    padding: '12px 16px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <span style={{ fontWeight: '600' }}>{t.name}</span>
+                    <fetcher.Form method="post" onSubmit={(e) => {
+                      if (!confirm(`Tem certeza que deseja excluir a equipe "${t.name}"? Os usuários desta equipe ficarão sem equipe definida.`)) {
+                        e.preventDefault();
+                      }
+                    }}>
+                      <input type="hidden" name="_action" value="deleteTeam" />
+                      <input type="hidden" name="teamId" value={t.id} />
+                      <button type="submit" className="icon-btn" style={{ color: '#ef4444', background: 'transparent' }}>
+                        <Trash2 size={16} />
+                      </button>
+                    </fetcher.Form>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <button type="submit" className="btn-register" style={{ marginTop: '10px' }}>Criar Equipe</button>
-        </fetcher.Form>
+        </div>
       </Modal>
 
       {/* Modal Editar Usuário */}
@@ -220,7 +307,7 @@ export default function Management() {
                 >
                   <option value="employee">Funcionário</option>
                   <option value="manager">Gerente</option>
-                  {editingUser.role === 'admin' && <option value="admin">Administrador (Master)</option>}
+                  {editingUser.role === 'admin' && <option value="admin">Admin</option>}
                 </select>
               </div>
             </fetcher.Form>

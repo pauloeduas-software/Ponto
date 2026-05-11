@@ -33,20 +33,27 @@ export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
   const viewParam = url.searchParams.get("view") || "team";
 
-  if (user.role !== "admin" && user.role !== "manager") {
-    throw new Response("Acesso negado", { status: 403 });
-  }
+  // Todos os usuários logados podem ver a escala
 
-  const isTeamView = viewParam === "team" || user.role === "manager";
+  // Apenas Administradores podem acessar a visão Global
+  const isTeamView = user.role !== "admin" || viewParam === "team";
 
   let employeesQuery = "SELECT id, name, role, avatarUrl, teamId FROM User";
   let shiftsQuery = "SELECT * FROM Shift";
   let params: any[] = [];
 
-  if (isTeamView && user.teamId) {
-    employeesQuery += " WHERE teamId = ?";
-    shiftsQuery = "SELECT s.* FROM Shift s JOIN User u ON s.userId = u.id WHERE u.teamId = ?";
-    params = [user.teamId];
+  if (isTeamView) {
+    if (user.teamId) {
+      // Usuário tem equipe: vê a equipe inteira
+      employeesQuery += " WHERE teamId = ?";
+      shiftsQuery = "SELECT s.* FROM Shift s JOIN User u ON s.userId = u.id WHERE u.teamId = ?";
+      params = [user.teamId];
+    } else {
+      // Usuário NÃO tem equipe: vê apenas a si mesmo por segurança
+      employeesQuery += " WHERE id = ?";
+      shiftsQuery = "SELECT * FROM Shift WHERE userId = ?";
+      params = [user.id];
+    }
   }
 
   const employees = db.prepare(employeesQuery).all(...params) as any[];

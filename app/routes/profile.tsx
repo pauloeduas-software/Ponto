@@ -184,17 +184,17 @@ export default function Profile() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{
                   padding: '4px 12px',
-                  background: (user as any).role === 'admin' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.05)',
+                  background: (user as any).role === 'admin' ? 'rgba(168, 85, 247, 0.15)' : (user as any).role === 'manager' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(167, 139, 250, 0.05)',
                   borderRadius: '10px',
                   fontSize: '0.75rem',
                   fontWeight: '700',
                   display: 'inline-block',
                   textTransform: 'uppercase',
-                  color: (user as any).role === 'admin' ? '#a5b4fc' : 'var(--text-muted)',
+                  color: (user as any).role === 'admin' ? '#d8b4fe' : (user as any).role === 'manager' ? '#c4b5fd' : '#a78bfa',
                   letterSpacing: '0.5px',
-                  border: '1px solid ' + ((user as any).role === 'admin' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.1)')
+                  border: '1px solid ' + ((user as any).role === 'admin' ? 'rgba(168, 85, 247, 0.2)' : (user as any).role === 'manager' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(167, 139, 250, 0.1)')
                 }}>
-                  {(user as any).role}
+                  {(user as any).role === 'admin' ? 'Admin' : (user as any).role === 'manager' ? 'Gerente' : 'Funcionário'}
                 </div>
                 
                 {team && (
@@ -217,7 +217,7 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Seção de Gestão (Apenas Super Admin) */}
+          {/* Seção de Gestão (Apenas Admin) */}
           {user.role === 'admin' && (
             <div style={{
               padding: '20px',

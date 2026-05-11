@@ -28,8 +28,9 @@ export async function loader({ request }: { request: Request }) {
 
 // Otimização: O root só revalida se houver mudança de página ou login/logout
 // Evita que o auto-sync da Home fique recarregando os dados do usuário logado
+// Otimização: Removida a trava de revalidação para garantir que mudanças de cargo reflitam na UI imediatamente
 export function shouldRevalidate() {
-  return false; 
+  return true; 
 }
 
 export const links = () => [
@@ -62,7 +63,7 @@ function Sidebar({ user }: { user: any }) {
         <Clock size={24} />
       </Link>
       
-      {user?.role === 'admin' && (
+      {(user?.role === 'admin' || user?.role === 'manager') && (
         <Link to="/admin" prefetch="intent" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
           <Shield size={24} />
         </Link>
