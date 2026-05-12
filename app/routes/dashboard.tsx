@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  ChevronLeft,
+  ChevronRight,
   Calendar as CalendarIcon,
   Timer,
   TrendingDown,
@@ -26,7 +26,7 @@ import { requireUserId, getUser } from "../session.server";
 export async function loader({ request }: { request: Request }) {
   const userId = await requireUserId(request);
   const user = await getUser(request);
-  
+
   const records = db.prepare("SELECT * FROM PunchRecord WHERE userId = ? ORDER BY date DESC").all(userId) as any[];
 
   const history: SavedDay[] = records.map(r => ({
@@ -85,7 +85,7 @@ export async function action({ request }: { request: Request }) {
 export default function Dashboard() {
   const { user, history } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
-  
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }));
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -137,8 +137,8 @@ export default function Dashboard() {
     let totalMins = 0;
     let lastEntryMins = -1;
     for (let i = 0; i < cleanedPunches.length; i += 2) {
-      if (cleanedPunches[i] && cleanedPunches[i+1]) {
-        const start = timeToMinutes(cleanedPunches[i]); const end = timeToMinutes(cleanedPunches[i+1]);
+      if (cleanedPunches[i] && cleanedPunches[i + 1]) {
+        const start = timeToMinutes(cleanedPunches[i]); const end = timeToMinutes(cleanedPunches[i + 1]);
         if (start >= lastEntryMins && end >= start) { totalMins += (end - start); lastEntryMins = start; }
       }
     }
@@ -168,23 +168,26 @@ export default function Dashboard() {
   return (
     <div className="container">
       <div className="card">
-        <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <div>
+        <div className="admin-header-new">
+          <div className="header-row-1">
             <h1>Histórico de Ponto</h1>
-            <p className="subtitle" style={{ margin: 0 }}>Relatório de {(user as any)?.name}</p>
+            <div className="month-nav-new">
+              <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
+              <span className="month-label-new">
+                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </span>
+              <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
+            </div>
           </div>
-          <div className="month-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-            <span style={{ fontWeight: '700', textTransform: 'capitalize', textAlign: 'center', minWidth: '130px' }}>
-              {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-            </span>
-            <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
-          </div>
-        </div>
 
-        <div className="stats-grid">
-          <StatCard label="Total no Mês" value={monthStats.worked} subValue={`${monthStats.count} dias registrados`} />
-          <StatCard label="Saldo Acumulado" value={monthStats.balance} isPositive={monthStats.isPositive} type="balance" subValue="Extra / Devedor" />
+          <div className="header-row-2">
+            <div className="balance-mini-left">
+              <span className="label">Saldo do Mês:</span>
+              <span className={`value ${monthStats.isPositive ? 'overtime' : 'missing'}`}>
+                {monthStats.balance}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="calendar-grid">
@@ -207,61 +210,61 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title={new Date(selectedDateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })} 
-        icon={<CalendarIcon size={20} style={{color: 'var(--primary)'}} />}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={new Date(selectedDateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+        icon={<CalendarIcon size={20} style={{ color: 'var(--primary)' }} />}
         className="large"
       >
-        <div className="details-grid" style={{gridTemplateColumns: '1fr', gap: '16px'}}>
+        <div className="details-grid" style={{ gridTemplateColumns: '1fr', gap: '16px' }}>
           {isEditing ? (
-              <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                <div style={{ padding: '16px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '16px', border: '1px solid rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>Meta deste Dia</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Alterar meta apenas para esta data</div>
-                  </div>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                    <input 
-                      type="text"
-                      inputMode="numeric"
-                      value={editGoal}
-                      maxLength={5}
-                      onChange={(e) => {
-                        const digits = e.target.value.replace(/[^0-9]/g, "");
-                        let h = digits.slice(0, 2); let m = digits.slice(2, 4);
-                        if (h.length === 2 && parseInt(h) > 23) h = "23";
-                        if (m.length === 2 && parseInt(m) > 59) m = "59";
-                        setEditGoal(digits.length > 2 ? h + ":" + m : h);
-                      }}
-                      style={{
-                        width: '100px',
-                        background: 'rgba(0,0,0,0.3)',
-                        border: '1px solid var(--glass-border)',
-                        borderRadius: '10px',
-                        padding: '6px 30px 6px 10px',
-                        color: 'white',
-                        fontWeight: '700',
-                        textAlign: 'center'
-                      }}
-                    />
-                    <Clock size={14} color="white" style={{ position: 'absolute', right: '10px', opacity: 0.6 }} />
-                  </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ padding: '16px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '16px', border: '1px solid rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>Meta deste Dia</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Alterar meta apenas para esta data</div>
                 </div>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={editGoal}
+                    maxLength={5}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/[^0-9]/g, "");
+                      let h = digits.slice(0, 2); let m = digits.slice(2, 4);
+                      if (h.length === 2 && parseInt(h) > 23) h = "23";
+                      if (m.length === 2 && parseInt(m) > 59) m = "59";
+                      setEditGoal(digits.length > 2 ? h + ":" + m : h);
+                    }}
+                    style={{
+                      width: '100px',
+                      background: 'rgba(0,0,0,0.3)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '10px',
+                      padding: '6px 30px 6px 10px',
+                      color: 'white',
+                      fontWeight: '700',
+                      textAlign: 'center'
+                    }}
+                  />
+                  <Clock size={14} color="white" style={{ position: 'absolute', right: '10px', opacity: 0.6 }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {(() => {
                   const pairsToShow = Math.max(1, Math.ceil(editPunches.length / 2) + (editPunches.length > 0 && editPunches.length % 2 === 0 && editPunches[editPunches.length - 1] !== "" ? 1 : 0));
-                  
+
                   return Array.from({ length: pairsToShow }).map((_, i) => {
                     const sIdx = i * 2;
                     const eIdx = sIdx + 1;
-                    const sVal = editPunches[sIdx]; 
+                    const sVal = editPunches[sIdx];
                     const eVal = editPunches[eIdx];
-                    
+
                     let isInv = false;
                     let errorMsg = "";
-                    
+
                     const sMins = sVal?.length === 5 ? timeToMinutes(sVal) : -1;
                     const eMins = eVal?.length === 5 ? timeToMinutes(eVal) : -1;
 
@@ -275,7 +278,7 @@ export default function Dashboard() {
                     }
 
                     return (
-                      <div key={i} style={{ 
+                      <div key={i} style={{
                         display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '16px', position: 'relative',
                         background: isInv ? 'rgba(255, 68, 68, 0.05)' : 'rgba(255,255,255,0.03)',
                         border: isInv ? '1px solid #ff4444' : '1px solid var(--glass-border)',
@@ -333,42 +336,107 @@ export default function Dashboard() {
                   });
                 })()}
               </div>
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <button className="btn-register" onClick={handleSaveEdit}>{fetcher.state !== "idle" ? <Loader2 size={16} className="animate-spin" /> : "Salvar"}</button>
-                <button className="btn-register" onClick={() => setIsEditing(false)} style={{background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none'}}>Cancelar</button>
+                <button className="btn-register" onClick={() => setIsEditing(false)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none' }}>Cancelar</button>
               </div>
             </div>
           ) : selectedDayData ? (
             <>
-              <div className="info-box" style={{padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--glass-border)'}}>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+              <div className="info-box" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--glass-border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {selectedDayData.punches && selectedDayData.punches.length > 0 ? Array.from({ length: Math.ceil(selectedDayData.punches.length / 2) }).map((_, i) => (
-                    <div key={i} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: i < Math.ceil((selectedDayData.punches?.length || 0) / 2) - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: '8px'}}>
-                      <div style={{display: 'flex', flexDirection: 'column'}}><span style={{fontSize: '0.65rem', color: 'var(--text-muted)'}}>Entrada</span><span style={{fontWeight: '700'}}>{selectedDayData.punches?.[i * 2]}</span></div>
-                      <div style={{color: 'var(--text-muted)'}}>→</div>
-                      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end'}}><span style={{fontSize: '0.65rem', color: 'var(--text-muted)'}}>Saída</span><span style={{fontWeight: '700'}}>{selectedDayData.punches?.[i * 2 + 1] || "--:--"}</span></div>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: i < Math.ceil((selectedDayData.punches?.length || 0) / 2) - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: '8px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Entrada</span><span style={{ fontWeight: '700' }}>{selectedDayData.punches?.[i * 2]}</span></div>
+                      <div style={{ color: 'var(--text-muted)' }}>→</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}><span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Saída</span><span style={{ fontWeight: '700' }}>{selectedDayData.punches?.[i * 2 + 1] || "--:--"}</span></div>
                     </div>
                   )) : null}
                 </div>
               </div>
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px'}}>
-                <div className="info-box" style={{background: 'rgba(255,255,255,0.05)'}}><span className="info-label"><Clock size={12} /> Meta</span><span className="info-value" style={{fontSize: '0.9rem'}}>{selectedDayData.goal}</span></div>
-                <div className="info-box"><span className="info-label"><Timer size={12} /> Trabalhado</span><span className="info-value" style={{fontSize: '0.9rem'}}>{selectedDayData.worked}</span></div>
-                <div className="info-box"><span className="info-label">{selectedDayData.isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo</span><span className={`info-value ${selectedDayData.isOvertime ? "overtime" : "missing"}`} style={{fontSize: '0.9rem'}}>{selectedDayData.isOvertime ? "+" : "-"}{selectedDayData.diff}</span></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                <div className="info-box" style={{ background: 'rgba(255,255,255,0.05)' }}><span className="info-label"><Clock size={12} /> Meta</span><span className="info-value" style={{ fontSize: '0.9rem' }}>{selectedDayData.goal}</span></div>
+                <div className="info-box"><span className="info-label"><Timer size={12} /> Trabalhado</span><span className="info-value" style={{ fontSize: '0.9rem' }}>{selectedDayData.worked}</span></div>
+                <div className="info-box"><span className="info-label">{selectedDayData.isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo</span><span className={`info-value ${selectedDayData.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.9rem' }}>{selectedDayData.isOvertime ? "+" : "-"}{selectedDayData.diff}</span></div>
               </div>
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px'}}>
-                <button className="btn-register" onClick={startEditing} style={{padding: '14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none'}}><Edit3 size={16} /> Editar</button>
-                <button className="btn-register" style={{padding: '14px', fontSize: '0.9rem', background: 'transparent', border: '1px dashed var(--error)', color: 'var(--error)', boxShadow: 'none'}} onClick={() => { if(confirm("Remover registro?")) { fetcher.submit({ _action: "delete", date: selectedDateStr }, { method: "post" }); setIsModalOpen(false); } }}><Trash2 size={16} /> Excluir</button>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
+                <button className="btn-register" onClick={startEditing} style={{ padding: '14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none' }}><Edit3 size={16} /> Editar</button>
+                <button className="btn-register" style={{ padding: '14px', fontSize: '0.9rem', background: 'transparent', border: '1px dashed var(--error)', color: 'var(--error)', boxShadow: 'none' }} onClick={() => { if (confirm("Remover registro?")) { fetcher.submit({ _action: "delete", date: selectedDateStr }, { method: "post" }); setIsModalOpen(false); } }}><Trash2 size={16} /> Excluir</button>
               </div>
             </>
           ) : (
-            <div style={{textAlign: 'center', padding: '40px 0'}}>
-              <p style={{color: 'var(--text-muted)', marginBottom: '16px'}}>Sem registros.</p>
-              <button className="btn-register" onClick={startEditing} style={{padding: '12px', fontSize: '0.9rem', width: 'auto', display: 'inline-flex', alignItems: 'center', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid var(--primary)', boxShadow: 'none'}}><Plus size={16} style={{marginRight: '8px'}} /> Adicionar</button>
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Sem registros.</p>
+              <button className="btn-register" onClick={startEditing} style={{ padding: '12px', fontSize: '0.9rem', width: 'auto', display: 'inline-flex', alignItems: 'center', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid var(--primary)', boxShadow: 'none' }}><Plus size={16} style={{ marginRight: '8px' }} /> Adicionar</button>
             </div>
           )}
         </div>
       </Modal>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .admin-header-new {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          margin-bottom: 32px;
+        }
+        .header-row-1 {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .header-row-2 {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        }
+        .month-nav-new {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .month-label-new {
+          font-weight: 700;
+          text-transform: capitalize;
+          min-width: 140px;
+          text-align: center;
+          font-size: 0.95rem;
+        }
+        .balance-mini-left {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 16px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          margin-top: 10px;
+        }
+        .balance-mini-left .label {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          font-weight: 600;
+        }
+        .balance-mini-left .value {
+          font-size: 1rem;
+          font-weight: 800;
+        }
+
+        @media (max-width: 600px) {
+          .header-row-1 {
+            flex-direction: row;
+            justify-content: space-between;
+          }
+          .month-label-new {
+            min-width: 110px;
+            font-size: 0.85rem;
+          }
+          h1 {
+            font-size: 1.4rem;
+          }
+        }
+      `}} />
     </div>
   );
 }

@@ -184,25 +184,25 @@ export default function Escala() {
   return (
     <div className="container">
       <div className="card">
-        <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <div>
+        <div className="admin-header-new">
+          <div className="header-row-1">
             <h1>Escala Mensal</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '6px' }}>
-              <p className="subtitle" style={{ margin: 0 }}>{!isTeamView ? 'Global' : `Equipe: ${teamName}`}</p>
-              {user.role === 'admin' && (
-                <div className="toggle-container">
-                  <a href="/escala?view=global" className={`view-toggle ${!isTeamView ? 'active' : ''}`}>Global</a>
-                  <a href="/escala?view=team" className={`view-toggle ${isTeamView ? 'active' : ''}`}>Minha Equipe</a>
-                </div>
-              )}
+            <div className="month-nav-new">
+              <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
+              <span className="month-label-new">
+                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </span>
+              <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
             </div>
           </div>
-          <div className="month-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-            <span style={{ fontWeight: '700', textTransform: 'capitalize', textAlign: 'center', minWidth: '130px' }}>
-              {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-            </span>
-            <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
+
+          <div className="header-row-2">
+            {user.role === 'admin' && (
+              <div className="toggle-container-new">
+                <a href="/escala?view=global" className={`view-toggle-new ${!isTeamView ? 'active' : ''}`}>Global</a>
+                <a href="/escala?view=team" className={`view-toggle-new ${isTeamView ? 'active' : ''}`}>Minha Equipe</a>
+              </div>
+            )}
           </div>
         </div>
 
@@ -223,30 +223,50 @@ export default function Escala() {
           </div>
         )}
 
-        {!isTeamView ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-            <div className="input-group">
-              <div className="label-container">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Layers size={12} /> Filtrar Equipe
-                </label>
+        <div style={{ marginBottom: '24px' }}>
+          {!isTeamView ? (
+            <div className="filters-grid-new">
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <div className="label-container">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Layers size={12} /> Filtrar Equipe
+                  </label>
+                </div>
+                <select
+                  value={selectedTeamId}
+                  onChange={(e) => {
+                    setSelectedTeamId(e.target.value);
+                    setSelectedUserId("todos");
+                  }}
+                  className="custom-select"
+                >
+                  <option value="todos">Todas as Equipes</option>
+                  {teams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
               </div>
-              <select
-                value={selectedTeamId}
-                onChange={(e) => {
-                  setSelectedTeamId(e.target.value);
-                  setSelectedUserId("todos");
-                }}
-                className="custom-select"
-              >
-                <option value="todos">Todas as Equipes</option>
-                {teams.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
 
-            <div className="input-group">
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <div className="label-container">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Filter size={12} /> Filtrar Colaborador
+                  </label>
+                </div>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="custom-select"
+                >
+                  <option value="todos">Todos</option>
+                  {filteredEmployees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div className="input-group" style={{ marginBottom: 0 }}>
               <div className="label-container">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Filter size={12} /> Filtrar Colaborador
@@ -257,32 +277,14 @@ export default function Escala() {
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 className="custom-select"
               >
-                <option value="todos">Todos</option>
-                {filteredEmployees.map(emp => (
+                <option value="todos">Toda a Equipe</option>
+                {employees.map(emp => (
                   <option key={emp.id} value={emp.id}>{emp.name}</option>
                 ))}
               </select>
             </div>
-          </div>
-        ) : (
-          <div className="input-group" style={{ marginBottom: '24px' }}>
-            <div className="label-container">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Filter size={12} /> Filtrar Colaborador
-              </label>
-            </div>
-            <select
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
-              className="custom-select"
-            >
-              <option value="todos">Toda a Equipe</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
+          )}
+        </div>
 
 
 
@@ -306,28 +308,17 @@ export default function Escala() {
                 >
                   {d.day}
                   {count > 0 && (
-                    <div style={{ display: 'flex', gap: '4px', marginTop: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <div className="scheduled-avatars-new">
                       {scheduledUsers.slice(0, 3).map((u, idx) => (
-                        <div key={idx} style={{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '7px',
-                          background: 'var(--primary)',
-                          overflow: 'hidden',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          border: '2px solid #0f172a',
-                          boxShadow: '0 3px 6px rgba(0,0,0,0.3)'
-                        }}>
+                        <div key={idx} className="avatar-mini-new">
                           {u.avatarUrl ? (
-                            <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={u.avatarUrl} alt="" />
                           ) : (
-                            <UserIcon size={14} color="white" />
+                            <UserIcon size={12} color="white" />
                           )}
                         </div>
                       ))}
-                      {count > 3 && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', alignSelf: 'flex-end', fontWeight: 'bold' }}>+{count - 3}</div>}
+                      {count > 3 && <div className="avatar-more-new">+{count - 3}</div>}
                     </div>
                   )}
                 </div>
@@ -408,7 +399,35 @@ export default function Escala() {
       </Modal>
       <style dangerouslySetInnerHTML={{
         __html: `
-        .toggle-container {
+        .admin-header-new {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          margin-bottom: 32px;
+        }
+        .header-row-1 {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .header-row-2 {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .month-nav-new {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .month-label-new {
+          font-weight: 700;
+          text-transform: capitalize;
+          min-width: 140px;
+          text-align: center;
+          font-size: 0.95rem;
+        }
+        .toggle-container-new {
           background: rgba(255, 255, 255, 0.03);
           padding: 4px;
           border-radius: 12px;
@@ -416,23 +435,40 @@ export default function Escala() {
           gap: 4px;
           border: 1px solid var(--glass-border);
         }
-        .view-toggle {
-          padding: 4px 12px;
+        .view-toggle-new {
+          padding: 6px 14px;
           border-radius: 9px;
-          font-size: 0.65rem;
+          font-size: 0.7rem;
           font-weight: 700;
           text-decoration: none;
           color: var(--text-muted);
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.2s;
         }
-        .view-toggle.active {
+        .view-toggle-new.active {
           background: var(--primary);
           color: white;
           box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
-        .view-toggle:not(.active):hover {
-          background: rgba(255, 255, 255, 0.05);
-          color: white;
+
+        @media (max-width: 600px) {
+          .header-row-1 {
+            flex-direction: row;
+            justify-content: space-between;
+          }
+          .month-label-new {
+            min-width: 110px;
+            font-size: 0.85rem;
+          }
+          .toggle-container-new {
+            flex: 1;
+          }
+          .view-toggle-new {
+            flex: 1;
+            text-align: center;
+          }
+          h1 {
+            font-size: 1.4rem;
+          }
         }
         .custom-select {
           width: 100%;
@@ -450,6 +486,58 @@ export default function Escala() {
         .custom-select:focus {
           border-color: var(--primary);
           background: rgba(0, 0, 0, 0.4);
+        }
+
+        .filters-grid-new {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+
+        .scheduled-avatars-new {
+          display: flex;
+          gap: 2px;
+          margin-top: 6px;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        .avatar-mini-new {
+          width: 20px;
+          height: 20px;
+          border-radius: 6px;
+          background: var(--primary);
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #0f172a;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .avatar-mini-new img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .avatar-more-new {
+          font-size: 0.6rem;
+          color: var(--text-muted);
+          align-self: flex-end;
+          font-weight: bold;
+          margin-left: 2px;
+        }
+
+        @media (max-width: 600px) {
+          .filters-grid-new {
+            grid-template-columns: 1fr;
+          }
+          .avatar-mini-new {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+          }
+          .scheduled-avatars-new {
+            gap: 1px;
+          }
         }
       `}} />
     </div>

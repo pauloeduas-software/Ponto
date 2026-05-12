@@ -201,29 +201,31 @@ export default function Home() {
     <div className="container">
       <div className="card">
         <div className="punches-section" style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <label style={{ margin: 0 }}>Linha do Tempo</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                {fetcher.state !== "idle" ? <Loader2 size={12} className="animate-spin" /> : `${punches.filter(p => p !== "").length} batidas hoje`}
-              </span>
-              <button 
-                onClick={() => setShowGoalInput(!showGoalInput)}
-                style={{ 
-                  background: 'rgba(255,255,255,0.03)', 
-                  border: '1px solid var(--glass-border)', 
-                  color: showGoalInput ? 'var(--primary)' : 'var(--text-muted)', 
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px',
-                  borderRadius: '10px',
-                  transition: 'all 0.2s'
-                }}
-                title="Configurar Meta"
-              >
-                <Settings size={14} />
-              </button>
+          <div className="admin-header-new" style={{ marginBottom: '24px' }}>
+            <div className="header-row-1">
+              <h1>Linha do Tempo</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  {fetcher.state !== "idle" ? <Loader2 size={12} className="animate-spin" /> : `${punches.filter(p => p !== "").length} batidas hoje`}
+                </span>
+                <button 
+                  onClick={() => setShowGoalInput(!showGoalInput)}
+                  style={{ 
+                    background: 'rgba(255,255,255,0.03)', 
+                    border: '1px solid var(--glass-border)', 
+                    color: showGoalInput ? 'var(--primary)' : 'var(--text-muted)', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '6px',
+                    borderRadius: '10px',
+                    transition: 'all 0.2s'
+                  }}
+                  title="Configurar Meta"
+                >
+                  <Settings size={14} />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -436,6 +438,30 @@ export default function Home() {
           <div className="result-item"><span className="result-label">Saldo do Dia</span><span className={`result-value ${currentResults.isOvertime ? "overtime" : "missing"}`}>{currentResults.isOvertime ? "+" : "-"}{currentResults.overtime}</span></div>
         </div>
       </div>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .admin-header-new {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .header-row-1 {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        h1 {
+          color: #fff;
+          font-size: 1.8rem;
+          margin: 0;
+        }
+
+        @media (max-width: 600px) {
+          h1 {
+            font-size: 1.4rem;
+          }
+        }
+      `}} />
     </div>
   );
 }
