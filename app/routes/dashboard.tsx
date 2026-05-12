@@ -92,6 +92,7 @@ export default function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [editPunches, setEditPunches] = useState<string[]>([]);
   const [editGoal, setEditGoal] = useState("08:00");
+  const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
 
   const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
 
@@ -180,6 +181,19 @@ export default function Dashboard() {
             </div>
           </div>
 
+          <div className="header-row-2" style={{ marginBottom: '-8px' }}>
+            <div className="toggle-container-new">
+              <button 
+                onClick={() => setCalendarView('grid')} 
+                className={`view-toggle-new ${calendarView === 'grid' ? 'active' : ''}`}
+              >Grade</button>
+              <button 
+                onClick={() => setCalendarView('list')} 
+                className={`view-toggle-new ${calendarView === 'list' ? 'active' : ''}`}
+              >Detalhado</button>
+            </div>
+          </div>
+
           <div className="header-row-2">
             <div className="balance-mini-left">
               <span className="label">Saldo do Mês:</span>
@@ -190,24 +204,77 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="calendar-grid">
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <div key={d} className="weekday-label">{d}</div>
-          ))}
-          {daysInMonth.map((d, i) => {
-            if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
-            const hasData = history.find(h => h.date === d.dateStr);
-            const isSelected = selectedDateStr === d.dateStr;
-            const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
-            const isToday = d.dateStr === today;
-            return (
-              <div key={d.dateStr} className={`calendar-day ${isSelected && isModalOpen ? 'selected' : ''} ${isToday ? 'today' : ''}`} onClick={() => handleDayClick(d.dateStr)}>
-                {d.day}
-                {hasData && <div className={`day-indicator ${hasData.isOvertime ? 'positive' : 'negative'}`} />}
-              </div>
-            );
-          })}
-        </div>
+        {calendarView === 'grid' ? (
+          <div className="calendar-grid">
+            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
+              <div key={d} className="weekday-label">{d}</div>
+            ))}
+            {daysInMonth.map((d, i) => {
+              if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
+              const hasData = history.find(h => h.date === d.dateStr);
+              const isSelected = selectedDateStr === d.dateStr;
+              const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+              const isToday = d.dateStr === today;
+              return (
+                <div key={d.dateStr} className={`calendar-day ${isSelected && isModalOpen ? 'selected' : ''} ${isToday ? 'today' : ''}`} onClick={() => handleDayClick(d.dateStr)}>
+                  {d.day}
+                  {hasData && <div className={`day-indicator ${hasData.isOvertime ? 'positive' : 'negative'}`} />}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="weekly-schedule-container">
+            {daysInMonth.filter(d => d !== null).map((wd: any) => {
+              const hasData = history.find(h => h.date === wd.dateStr);
+              const dObj = new Date(wd.dateStr + 'T12:00:00');
+              const dayName = dObj.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+
+              return (
+                <div key={wd.dateStr} className="schedule-day-row" onClick={() => handleDayClick(wd.dateStr)}>
+                  <div className="day-info-mini">
+                    <span className="day-num">{wd.day}</span>
+                    <span className="day-name">{dayName}</span>
+                  </div>
+                  
+                  <div className="punches-flow">
+                    {hasData ? (
+                      <div className="day-punches-wrapper">
+                        {hasData.punches?.map((punch, pIdx) => {
+                          if (pIdx % 2 !== 0) return null;
+                          const start = punch;
+                          const end = hasData.punches?.[pIdx + 1];
+                          
+                          return (
+                            <div key={pIdx} className="punch-card-mini">
+                              <div className="punch-item">
+                                <span className="p-label">Entrada</span>
+                                <span className="p-time">{start}</span>
+                              </div>
+                              <div className="punch-arrow">→</div>
+                              <div className="punch-item">
+                                <span className="p-label">Saída</span>
+                                <span className="p-time">{end || "--:--"}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="no-records-text">Sem registros</span>
+                    )}
+                  </div>
+
+                  {hasData && (
+                    <div className={`day-balance-tag ${hasData.isOvertime ? 'overtime' : 'missing'}`}>
+                      {hasData.isOvertime ? '+' : '-'}{hasData.diff}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <Modal
@@ -428,12 +495,165 @@ export default function Dashboard() {
             flex-direction: row;
             justify-content: space-between;
           }
+          .header-row-2 {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+          }
           .month-label-new {
             min-width: 110px;
             font-size: 0.85rem;
           }
           h1 {
             font-size: 1.4rem;
+          }
+        }
+
+        .toggle-container-new {
+          background: rgba(255, 255, 255, 0.03);
+          padding: 4px;
+          border-radius: 12px;
+          display: flex;
+          gap: 4px;
+          border: 1px solid var(--glass-border);
+        }
+        .view-toggle-new {
+          padding: 6px 14px;
+          border-radius: 9px;
+          font-size: 0.7rem;
+          font-weight: 700;
+          text-decoration: none;
+          color: var(--text-muted);
+          transition: all 0.2s;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex: 1;
+        }
+        .view-toggle-new.active {
+          background: var(--primary);
+          color: white;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        /* List View Styles */
+        .weekly-schedule-container {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-top: 10px;
+        }
+        .schedule-day-row {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--glass-border);
+          border-radius: 20px;
+          padding: 16px;
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .schedule-day-row:hover {
+          background: rgba(255, 255, 255, 0.06);
+          transform: translateX(4px);
+        }
+        .day-info-mini {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-width: 50px;
+          padding-right: 20px;
+          border-right: 1px solid var(--glass-border);
+        }
+        .day-num {
+          font-size: 1.4rem;
+          font-weight: 800;
+          line-height: 1;
+        }
+        .day-name {
+          font-size: 0.65rem;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          font-weight: 700;
+        }
+        .punches-flow {
+          flex: 1;
+          display: flex;
+          gap: 12px;
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+        .day-punches-wrapper {
+          display: flex;
+          gap: 12px;
+        }
+        .punch-card-mini {
+          background: rgba(0, 0, 0, 0.2);
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          padding: 8px 16px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: fit-content;
+        }
+        .punch-item {
+          display: flex;
+          flex-direction: column;
+        }
+        .p-label {
+          font-size: 0.55rem;
+          color: var(--text-muted);
+          text-transform: uppercase;
+        }
+        .p-time {
+          font-size: 0.9rem;
+          font-weight: 700;
+        }
+        .punch-arrow {
+          color: var(--text-muted);
+          font-size: 0.8rem;
+          opacity: 0.5;
+        }
+        .day-balance-tag {
+          padding: 6px 12px;
+          border-radius: 10px;
+          font-size: 0.8rem;
+          font-weight: 800;
+          min-width: 70px;
+          text-align: center;
+        }
+        .no-records-text {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          font-style: italic;
+        }
+
+        @media (max-width: 600px) {
+          .schedule-day-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+          }
+          .day-info-mini {
+            flex-direction: row;
+            justify-content: space-between;
+            border-right: none;
+            border-bottom: 1px solid var(--glass-border);
+            padding-right: 0;
+            padding-bottom: 8px;
+          }
+          .day-num { font-size: 1.1rem; }
+          .punches-flow {
+            flex-wrap: wrap;
+          }
+          .day-balance-tag {
+            align-self: flex-end;
           }
         }
       `}} />

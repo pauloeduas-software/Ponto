@@ -94,6 +94,7 @@ export default function Admin() {
   const [selectedDateStr, setSelectedDateStr] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTeamBalanceModalOpen, setIsTeamBalanceModalOpen] = useState(false);
+  const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
 
   const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
 
@@ -167,12 +168,24 @@ export default function Admin() {
           </div>
 
           <div className="header-row-2">
-            {user.role === 'admin' && (
+            <div className="toggles-group">
+              {user.role === 'admin' && (
+                <div className="toggle-container-new">
+                  <a href="/admin?view=global" className={`view-toggle-new ${!isTeamView ? 'active' : ''}`}>Global</a>
+                  <a href="/admin?view=team" className={`view-toggle-new ${isTeamView ? 'active' : ''}`}>Minha Equipe</a>
+                </div>
+              )}
               <div className="toggle-container-new">
-                <a href="/admin?view=global" className={`view-toggle-new ${!isTeamView ? 'active' : ''}`}>Global</a>
-                <a href="/admin?view=team" className={`view-toggle-new ${isTeamView ? 'active' : ''}`}>Minha Equipe</a>
+                <button
+                  onClick={() => setCalendarView('grid')}
+                  className={`view-toggle-new ${calendarView === 'grid' ? 'active' : ''}`}
+                >Grade</button>
+                <button
+                  onClick={() => setCalendarView('list')}
+                  className={`view-toggle-new ${calendarView === 'list' ? 'active' : ''}`}
+                >Detalhado</button>
               </div>
-            )}
+            </div>
             <button
               className="btn-saldos-new"
               onClick={() => setIsTeamBalanceModalOpen(true)}
@@ -266,74 +279,164 @@ export default function Admin() {
           )}
         </div>
 
-        {/* Calendar Grid */}
-        <div className="calendar-grid">
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <div key={d} className="weekday-label">{d}</div>
-          ))}
-          {daysInMonth.map((d, i) => {
-            if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
-            const isSelected = selectedDateStr === d.dateStr;
-            const recCount = recordCount(d.dateStr);
+        {calendarView === 'grid' ? (
+          <div className="calendar-grid">
+            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
+              <div key={d} className="weekday-label">{d}</div>
+            ))}
+            {daysInMonth.map((d, i) => {
+              if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
+              const isSelected = selectedDateStr === d.dateStr;
+              const recCount = recordCount(d.dateStr);
 
-            return (
-              <div
-                key={d.dateStr}
-                className={`calendar-day ${isSelected && isModalOpen ? 'selected' : ''}`}
-                onClick={() => handleDayClick(d.dateStr)}
-              >
-                {d.day}
-                {selectedUserId === "todos" ? (
-                  recordCount(d.dateStr) > 0 && (
-                    <div style={{
-                      display: 'flex',
-                      gap: '2px',
-                      marginTop: '4px',
-                      justifyContent: 'center',
-                      flexWrap: 'wrap'
-                    }}>
-                      {filteredEmployees
-                        .filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))
-                        .slice(0, 2)
-                        .map((emp, idx) => (
-                          <div key={idx} style={{
-                            width: '16px',
-                            height: '16px',
-                            borderRadius: '4px',
-                            background: 'var(--primary)',
-                            overflow: 'hidden',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: '1px solid #0f172a',
+              return (
+                <div
+                  key={d.dateStr}
+                  className={`calendar-day ${isSelected && isModalOpen ? 'selected' : ''}`}
+                  onClick={() => handleDayClick(d.dateStr)}
+                >
+                  {d.day}
+                  {selectedUserId === "todos" ? (
+                    recordCount(d.dateStr) > 0 && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '2px',
+                        marginTop: '4px',
+                        justifyContent: 'center',
+                        flexWrap: 'wrap'
+                      }}>
+                        {filteredEmployees
+                          .filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))
+                          .slice(0, 2)
+                          .map((emp, idx) => (
+                            <div key={idx} style={{
+                              width: '16px',
+                              height: '16px',
+                              borderRadius: '4px',
+                              background: 'var(--primary)',
+                              overflow: 'hidden',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: '1px solid #0f172a',
+                            }}>
+                              {emp.avatarUrl
+                                ? <img src={emp.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                : <UserIcon size={10} color="white" />
+                              }
+                            </div>
+                          ))}
+                        {recordCount(d.dateStr) > 2 && (
+                          <div style={{
+                            fontSize: '0.55rem',
+                            color: 'var(--text-muted)',
+                            fontWeight: 'bold',
+                            lineHeight: '16px'
                           }}>
-                            {emp.avatarUrl
-                              ? <img src={emp.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              : <UserIcon size={10} color="white" />
-                            }
+                            +{recordCount(d.dateStr) - 2}
                           </div>
-                        ))}
-                      {recordCount(d.dateStr) > 2 && (
-                        <div style={{
-                          fontSize: '0.55rem',
-                          color: 'var(--text-muted)',
-                          fontWeight: 'bold',
-                          lineHeight: '16px'
-                        }}>
-                          +{recordCount(d.dateStr) - 2}
+                        )}
+                      </div>
+                    )
+                  ) : (
+                    (historyData[selectedUserId] || []).some(h => h.date === d.dateStr) && (
+                      <div className={`day-indicator ${(historyData[selectedUserId] || []).find(h => h.date === d.dateStr)?.isOvertime ? 'positive' : 'negative'}`} />
+                    )
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="weekly-schedule-container">
+            {daysInMonth.filter(d => d !== null).map((wd: any) => {
+              // Buscar todos os registros do dia para a equipe filtrada
+              const dayGlobalRecords = filteredEmployees.map(emp => {
+                const record = (historyData[emp.id] || []).find(h => h.date === wd.dateStr);
+                return record ? { emp, record } : null;
+              }).filter(r => r !== null) as { emp: any, record: SavedDay }[];
+
+              const dayBalance = selectedUserId === "todos"
+                ? 0
+                : (dayGlobalRecords.find(r => r.emp.id === selectedUserId)?.record.diffMins || 0);
+
+              const dObj = new Date(wd.dateStr + 'T12:00:00');
+              const dayName = dObj.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+
+              return (
+                <div key={wd.dateStr} className="schedule-day-row" onClick={() => handleDayClick(wd.dateStr)}>
+                  <div className="day-info-mini">
+                    <span className="day-num">{wd.day}</span>
+                    <span className="day-name">{dayName}</span>
+                  </div>
+
+                  <div className="punches-flow">
+                    {selectedUserId === "todos" ? (
+                      dayGlobalRecords.length > 0 ? (
+                        <div className="team-day-summary">
+                          <div className="scheduled-avatars-new" style={{ justifyContent: 'flex-start' }}>
+                            {dayGlobalRecords.slice(0, 5).map((r, idx) => (
+                              <div key={idx} className="avatar-mini-new" title={r.emp.name}>
+                                {r.emp.avatarUrl
+                                  ? <img src={r.emp.avatarUrl} alt="" />
+                                  : <UserIcon size={10} color="white" />
+                                }
+                              </div>
+                            ))}
+                            {dayGlobalRecords.length > 5 && (
+                              <div className="avatar-more-new">+{dayGlobalRecords.length - 5}</div>
+                            )}
+                          </div>
+                          <span className="summary-text">
+                            {dayGlobalRecords.length} colaborador{dayGlobalRecords.length > 1 ? 'es' : ''} registrou{dayGlobalRecords.length > 1 ? 'am' : ''} ponto
+                          </span>
                         </div>
-                      )}
+                      ) : (
+                        <span className="no-records-text">Sem registros</span>
+                      )
+                    ) : (
+                      dayGlobalRecords.some(r => r.emp.id === selectedUserId) ? (
+                        dayGlobalRecords
+                          .filter(r => r.emp.id === selectedUserId)
+                          .map((r, idx) => (
+                            <div key={idx} className="day-punches-wrapper">
+                              {r.record.punches?.map((punch, pIdx) => {
+                                if (pIdx % 2 !== 0) return null;
+                                const start = punch;
+                                const end = r.record.punches?.[pIdx + 1];
+
+                                return (
+                                  <div key={pIdx} className="punch-card-mini">
+                                    <div className="punch-item">
+                                      <span className="p-label">Entrada</span>
+                                      <span className="p-time">{start}</span>
+                                    </div>
+                                    <div className="punch-arrow">→</div>
+                                    <div className="punch-item">
+                                      <span className="p-label">Saída</span>
+                                      <span className="p-time">{end || "--:--"}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))
+                      ) : (
+                        <span className="no-records-text">Sem registros</span>
+                      )
+                    )}
+                  </div>
+
+                  {selectedUserId !== "todos" && dayGlobalRecords.some(r => r.emp.id === selectedUserId) && (
+                    <div className={`day-balance-tag ${dayBalance >= 0 ? 'overtime' : 'missing'}`}>
+                      {dayBalance >= 0 ? '+' : '-'}{minutesToHHMM(Math.abs(dayBalance))}
                     </div>
-                  )
-                ) : (
-                  (historyData[selectedUserId] || []).some(h => h.date === d.dateStr) && (
-                    <div className={`day-indicator ${(historyData[selectedUserId] || []).find(h => h.date === d.dateStr)?.isOvertime ? 'positive' : 'negative'}`} />
-                  )
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Modal de Detalhes do Dia */}
@@ -502,7 +605,15 @@ export default function Admin() {
       >
         <div className="team-balance-list">
           {teamBalances.map(emp => (
-            <div key={emp.id} className="team-balance-item">
+            <div
+              key={emp.id}
+              className="team-balance-item clickable"
+              onClick={() => {
+                setSelectedUserId(emp.id);
+                setCalendarView('list');
+                setIsTeamBalanceModalOpen(false);
+              }}
+            >
               <div className="emp-info">
                 <div className="emp-avatar">
                   {emp.avatarUrl
@@ -580,6 +691,13 @@ export default function Admin() {
           text-decoration: none;
           color: var(--text-muted);
           transition: all 0.2s;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .view-toggle-new.active {
           background: var(--primary);
@@ -698,6 +816,15 @@ export default function Admin() {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          transition: all 0.2s;
+        }
+        .team-balance-item.clickable {
+          cursor: pointer;
+        }
+        .team-balance-item.clickable:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: var(--primary);
+          transform: translateY(-2px);
         }
         .emp-info {
           display: flex;
@@ -745,6 +872,161 @@ export default function Admin() {
         .balance-mini .value {
           font-size: 0.85rem;
           font-weight: 700;
+        }
+
+        /* Weekly Schedule List */
+        .weekly-schedule-container {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-top: 10px;
+        }
+        .schedule-day-row {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--glass-border);
+          border-radius: 20px;
+          padding: 16px;
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .schedule-day-row:hover {
+          background: rgba(255, 255, 255, 0.06);
+          transform: translateX(4px);
+        }
+        .day-info-mini {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-width: 50px;
+          padding-right: 20px;
+          border-right: 1px solid var(--glass-border);
+        }
+        .day-num {
+          font-size: 1.4rem;
+          font-weight: 800;
+          line-height: 1;
+        }
+        .day-name {
+          font-size: 0.65rem;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          font-weight: 700;
+        }
+        .punches-flow {
+          flex: 1;
+          display: flex;
+          gap: 12px;
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+        .day-punches-wrapper {
+          display: flex;
+          gap: 12px;
+        }
+        .punch-card-mini {
+          background: rgba(0, 0, 0, 0.2);
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          padding: 8px 16px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: fit-content;
+        }
+        .punch-item {
+          display: flex;
+          flex-direction: column;
+        }
+        .p-label {
+          font-size: 0.55rem;
+          color: var(--text-muted);
+          text-transform: uppercase;
+        }
+        .p-time {
+          font-size: 0.9rem;
+          font-weight: 700;
+        }
+        .punch-arrow {
+          color: var(--text-muted);
+          font-size: 0.8rem;
+          opacity: 0.5;
+        }
+        .day-balance-tag {
+          padding: 6px 12px;
+          border-radius: 10px;
+          font-size: 0.8rem;
+          font-weight: 800;
+          min-width: 70px;
+          text-align: center;
+        }
+        .no-records-text {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          font-style: italic;
+        }
+
+        @media (max-width: 600px) {
+          .schedule-day-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+          }
+          .day-info-mini {
+            flex-direction: row;
+            justify-content: space-between;
+            border-right: none;
+            border-bottom: 1px solid var(--glass-border);
+            padding-right: 0;
+            padding-bottom: 8px;
+          }
+          .day-num { font-size: 1.1rem; }
+          .punches-flow {
+            flex-wrap: wrap;
+          }
+          .day-balance-tag {
+            align-self: flex-end;
+          }
+        }
+
+        .team-day-summary {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .summary-text {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          font-weight: 500;
+        }
+        .scheduled-avatars-new {
+          display: flex;
+          gap: -4px; /* Sobrepor levemente */
+        }
+        .avatar-mini-new {
+          width: 24px;
+          height: 24px;
+          border-radius: 8px;
+          border: 2px solid #0f172a;
+          background: var(--primary);
+          overflow: hidden;
+          margin-left: -8px;
+        }
+        .avatar-mini-new:first-child {
+          margin-left: 0;
+        }
+        .avatar-mini-new img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .avatar-more-new {
+          font-size: 0.65rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          margin-left: 8px;
         }
       `}} />
     </div>
