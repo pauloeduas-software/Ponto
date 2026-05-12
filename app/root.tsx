@@ -12,10 +12,10 @@ import {
   useNavigation
 } from "react-router";
 import { useEffect, useState, useMemo } from "react";
-import { 
-  Clock, 
-  Shield, 
-  CalendarClock, 
+import {
+  Clock,
+  Shield,
+  CalendarClock,
   LayoutDashboard,
   User as UserIcon
 } from "lucide-react";
@@ -30,7 +30,7 @@ export async function loader({ request }: { request: Request }) {
 // Evita que o auto-sync da Home fique recarregando os dados do usuário logado
 // Otimização: Removida a trava de revalidação para garantir que mudanças de cargo reflitam na UI imediatamente
 export function shouldRevalidate() {
-  return true; 
+  return true;
 }
 
 export const links = () => [
@@ -56,13 +56,13 @@ export const links = () => [
 function Sidebar({ user }: { user: any }) {
   const location = useLocation();
   const path = location.pathname;
-  
+
   return (
     <aside className="sidebar">
       <Link to="/" prefetch="intent" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
         <Clock size={24} />
       </Link>
-      
+
       {(user?.role === 'admin' || user?.role === 'manager') && (
         <Link to="/admin" prefetch="intent" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
           <Shield size={24} />
@@ -79,10 +79,10 @@ function Sidebar({ user }: { user: any }) {
 
       <Link to="/perfil" prefetch="intent" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
         {user?.avatarUrl ? (
-          <img 
-            src={user.avatarUrl} 
-            alt="Perfil" 
-            style={{ width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover' }} 
+          <img
+            src={user.avatarUrl}
+            alt="Perfil"
+            style={{ width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover' }}
           />
         ) : (
           <UserIcon size={24} />
