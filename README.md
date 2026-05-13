@@ -1,4 +1,4 @@
-# 🕒 Ponto
+# Ponto
 
 [![React Router](https://img.shields.io/badge/React_Router-v7-CA4245?logo=react-router)](https://reactrouter.com)
 [![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)](https://nodejs.org)
@@ -15,9 +15,10 @@ O **Ponto** é uma solução corporativa robusta para controle de jornada de tra
 
 - **⏱️ Registro de Ponto Inteligente:** Interface intuitiva com detecção automática de virada de dia e cálculo de saldo (extra/negativo) em tempo real. Suporte a múltiplos períodos e registro manual.
 - **📊 Histórico e Dashboard:** Painel individual de estatísticas mensais com análise de saldo acumulado. Permite a edição e exclusão granular de batidas específicas, garantindo flexibilidade na correção de registros.
+- **🧮 Simulador de Horas Inteligente:** Ferramenta avançada para planejamento semanal que calcula automaticamente compensações de débito ou uso de crédito de horas extras.
 - **📅 Escala Mensal Dinâmica:** Sistema de planejamento de equipe com interface de calendário interativa. Permite alternar escalas de trabalho e folgas com Salvamento Automático, eliminando a necessidade de botões de confirmação.
 - **👤 Perfil Consolidado:** Badges dinâmicos que mostram Cargo e Equipe. Personalização de Avatar via Base64 e Meta de Horas individualizada.
-- **🎨 UI/UX Premium:** Design consistente em todas as rotas (Histórico, Relatórios, Escala) com navegação temporal fixa e alinhada, evitando quebras de layout.
+- **🎨 UI/UX:** Design consistente em todas as rotas (Histórico, Relatórios, Escala) com navegação temporal fixa e alinhada, evitando quebras de layout.
 - **🛡️ Painel de Gestão Avançado:** 
     - Criação e organização de equipes.
     - **Reset de Senha:** Administradores podem redefinir senhas de usuários diretamente pela interface.

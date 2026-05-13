@@ -143,7 +143,9 @@ export default function Dashboard() {
         if (start >= lastEntryMins && end >= start) { totalMins += (end - start); lastEntryMins = start; }
       }
     }
-    const diffMins = totalMins - goalMins;
+    const filledCount = cleanedPunches.filter(p => p.trim() !== "").length;
+    const isComplete = filledCount > 0 && filledCount % 2 === 0;
+    const diffMins = isComplete ? (totalMins - goalMins) : 0;
 
     fetcher.submit(
       {

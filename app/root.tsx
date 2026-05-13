@@ -17,6 +17,7 @@ import {
   Shield,
   CalendarClock,
   LayoutDashboard,
+  Calculator,
   User as UserIcon
 } from "lucide-react";
 import { getUser } from "./session.server";
@@ -75,6 +76,10 @@ function Sidebar({ user }: { user: any }) {
 
       <Link to="/dashboard" prefetch="intent" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
         <LayoutDashboard size={24} />
+      </Link>
+      
+      <Link to="/simulador" prefetch="intent" className={`sidebar-link ${path === '/simulador' ? 'active' : ''}`} title="Simulador de Horas">
+        <Calculator size={24} />
       </Link>
 
       <Link to="/perfil" prefetch="intent" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">

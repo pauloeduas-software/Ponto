@@ -130,7 +130,9 @@ export default function Home() {
         }
       }
     }
-    const diffMins = totalMins - timeToMinutes(dailyGoal);
+    const filledPunches = punches.filter(p => p.trim() !== "");
+    const isComplete = filledPunches.length > 0 && filledPunches.length % 2 === 0;
+    const diffMins = isComplete ? (totalMins - timeToMinutes(dailyGoal)) : 0;
     return {
       totalWorked: minutesToHHMM(totalMins),
       overtime: minutesToHHMM(Math.abs(diffMins)),
@@ -171,7 +173,8 @@ export default function Home() {
         }
       }
     }
-    const diffMins = totalMins - timeToMinutes(goalValue);
+    const isComplete = cleanedPunches.length > 0 && cleanedPunches.length % 2 === 0;
+    const diffMins = isComplete ? (totalMins - timeToMinutes(goalValue)) : 0;
 
     fetcher.submit(
       {
