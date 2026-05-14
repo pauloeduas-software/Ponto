@@ -130,8 +130,9 @@ export default function Home() {
         }
       }
     }
-    const filledPunches = punches.filter(p => p.trim() !== "");
-    const isComplete = filledPunches.length > 0 && filledPunches.length % 2 === 0;
+    const lastFilledIdx = [...punches].reverse().findIndex(p => p.trim() !== "");
+    const actualLastIdx = lastFilledIdx === -1 ? -1 : punches.length - 1 - lastFilledIdx;
+    const isComplete = actualLastIdx !== -1 && (actualLastIdx + 1) % 2 === 0;
     const diffMins = isComplete ? (totalMins - timeToMinutes(dailyGoal)) : 0;
     return {
       totalWorked: minutesToHHMM(totalMins),
@@ -173,7 +174,9 @@ export default function Home() {
         }
       }
     }
-    const isComplete = cleanedPunches.length > 0 && cleanedPunches.length % 2 === 0;
+    const lastFilledIdx = [...cleanedPunches].reverse().findIndex(p => p.trim() !== "");
+    const actualLastIdx = lastFilledIdx === -1 ? -1 : cleanedPunches.length - 1 - lastFilledIdx;
+    const isComplete = actualLastIdx !== -1 && (actualLastIdx + 1) % 2 === 0;
     const diffMins = isComplete ? (totalMins - timeToMinutes(goalValue)) : 0;
 
     fetcher.submit(
@@ -438,7 +441,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className="result-item"><span className="result-label">Saldo do Dia</span><span className={`result-value ${currentResults.isOvertime ? "overtime" : "missing"}`}>{currentResults.isOvertime ? "+" : "-"}{currentResults.overtime}</span></div>
+          <div className="result-item"><span className="result-label">Saldo do Dia</span><span className={`result-value ${currentResults.isOvertime ? "overtime" : "missing"}`}>{currentResults.overtime}</span></div>
         </div>
       </div>
       <style dangerouslySetInnerHTML={{

@@ -143,8 +143,9 @@ export default function Dashboard() {
         if (start >= lastEntryMins && end >= start) { totalMins += (end - start); lastEntryMins = start; }
       }
     }
-    const filledCount = cleanedPunches.filter(p => p.trim() !== "").length;
-    const isComplete = filledCount > 0 && filledCount % 2 === 0;
+    const lastFilledIdx = [...cleanedPunches].reverse().findIndex(p => p.trim() !== "");
+    const actualLastIdx = lastFilledIdx === -1 ? -1 : cleanedPunches.length - 1 - lastFilledIdx;
+    const isComplete = actualLastIdx !== -1 && (actualLastIdx + 1) % 2 === 0;
     const diffMins = isComplete ? (totalMins - goalMins) : 0;
 
     fetcher.submit(
@@ -269,7 +270,7 @@ export default function Dashboard() {
 
                   {hasData && (
                     <div className={`day-balance-tag ${hasData.isOvertime ? 'overtime' : 'missing'}`}>
-                      {hasData.isOvertime ? '+' : '-'}{hasData.diff}
+                      {hasData.diff}
                     </div>
                   )}
                 </div>
@@ -426,7 +427,7 @@ export default function Dashboard() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                 <div className="info-box" style={{ background: 'rgba(255,255,255,0.05)' }}><span className="info-label"><Clock size={12} /> Meta</span><span className="info-value" style={{ fontSize: '0.9rem' }}>{selectedDayData.goal}</span></div>
                 <div className="info-box"><span className="info-label"><Timer size={12} /> Trabalhado</span><span className="info-value" style={{ fontSize: '0.9rem' }}>{selectedDayData.worked}</span></div>
-                <div className="info-box"><span className="info-label">{selectedDayData.isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo</span><span className={`info-value ${selectedDayData.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.9rem' }}>{selectedDayData.isOvertime ? "+" : "-"}{selectedDayData.diff}</span></div>
+                <div className="info-box"><span className="info-label">{selectedDayData.isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo</span><span className={`info-value ${selectedDayData.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.9rem' }}>{selectedDayData.diff}</span></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
                 <button className="btn-register" onClick={startEditing} style={{ padding: '14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none' }}><Edit3 size={16} /> Editar</button>

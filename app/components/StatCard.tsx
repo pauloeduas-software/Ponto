@@ -13,7 +13,7 @@ export function StatCard({ label, value, subValue, isPositive, type }: StatCardP
     <div className="stat-card">
       <span className="stat-label">{label}</span>
       <div className={`stat-value ${valueClass}`}>
-        {type === 'balance' ? (isPositive ? '+' : '-') : ''}{value}
+        {value}
       </div>
       {subValue && <span style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>{subValue}</span>}
     </div>

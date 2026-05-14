@@ -429,7 +429,7 @@ export default function Admin() {
 
                   {selectedUserId !== "todos" && dayGlobalRecords.some(r => r.emp.id === selectedUserId) && (
                     <div className={`day-balance-tag ${dayBalance >= 0 ? 'overtime' : 'missing'}`}>
-                      {dayBalance >= 0 ? '+' : '-'}{minutesToHHMM(Math.abs(dayBalance))}
+                      {minutesToHHMM(Math.abs(dayBalance))}
                     </div>
                   )}
                 </div>
@@ -527,7 +527,7 @@ export default function Admin() {
                     <div className="info-box" style={{ padding: '10px' }}>
                       <span className="info-label">Saldo</span>
                       <span className={`info-value ${record.data.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.8rem' }}>
-                        {record.data.isOvertime ? "+" : "-"}{record.data.diff}
+                        {record.data.diff}
                       </span>
                     </div>
                   </div>
@@ -582,7 +582,7 @@ export default function Admin() {
                     {selectedDayUserData.isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo
                   </span>
                   <span className={`info-value ${selectedDayUserData.isOvertime ? "overtime" : "missing"}`}>
-                    {selectedDayUserData.isOvertime ? "+" : "-"}{selectedDayUserData.diff}
+                    {selectedDayUserData.diff}
                   </span>
                 </div>
               </div>

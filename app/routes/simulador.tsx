@@ -118,7 +118,7 @@ export default function Simulador() {
                 <div className="day-header-mob">
                   <strong>{d.name}</strong>
                   <span className={`day-res-mob ${d.diff > 0 ? 'pos' : d.diff < 0 ? 'neg' : ''}`}>
-                    {d.diff !== 0 ? (d.diff > 0 ? '+' : '-') + minutesToHHMM(Math.abs(d.diff)) : '--:--'}
+                  {d.diff !== 0 ? minutesToHHMM(Math.abs(d.diff)) : '--:--'}
                   </span>
                 </div>
 
@@ -129,7 +129,7 @@ export default function Simulador() {
                 <div className="day-field"><label className="mob-label">Saída</label><input placeholder="--:--" value={d.end} onChange={e => updateField(d.id, 'end', e.target.value)} maxLength={5} /></div>
                 <div className="day-field"><label className="mob-label">Almoço</label><input placeholder="00:00" value={d.break} onChange={e => updateField(d.id, 'break', e.target.value)} maxLength={5} /></div>
                 <div className={`col-res-final desktop-only ${d.diff > 0 ? 'pos' : d.diff < 0 ? 'neg' : ''}`}>
-                  {d.diff !== 0 ? (d.diff > 0 ? '+' : '-') + minutesToHHMM(Math.abs(d.diff)) : '--:--'}
+                  {d.diff !== 0 ? minutesToHHMM(Math.abs(d.diff)) : '--:--'}
                 </div>
               </div>
             ))}
@@ -142,7 +142,7 @@ export default function Simulador() {
               <span className="balance-label">Saldo Semanal</span>
               <div className={`balance-value ${results.hasNegative ? 'neg' : results.totalDiff > 0 ? 'pos' : ''}`}>
                 {results.totalDiff !== 0 && (results.hasNegative ? <TrendingDown size={20} /> : <TrendingUp size={20} />)}
-                {results.totalDiff === 0 ? '00:00' : (results.hasNegative ? '-' : '+') + minutesToHHMM(Math.abs(results.totalDiff))}
+                {results.totalDiff === 0 ? '00:00' : minutesToHHMM(Math.abs(results.totalDiff))}
               </div>
             </div>
 
