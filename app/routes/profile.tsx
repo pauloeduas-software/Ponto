@@ -181,38 +181,39 @@ export default function Profile() {
                 />
               </div>
               <p style={{color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '12px'}}>@{ (user as any).username }</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <div style={{
                   padding: '4px 12px',
-                  background: (user as any).role === 'admin' ? 'rgba(168, 85, 247, 0.15)' : (user as any).role === 'manager' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(167, 139, 250, 0.05)',
+                  background: (user as any).role === 'admin' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(167, 139, 250, 0.05)',
                   borderRadius: '10px',
                   fontSize: '0.75rem',
                   fontWeight: '700',
                   display: 'inline-block',
                   textTransform: 'uppercase',
-                  color: (user as any).role === 'admin' ? '#d8b4fe' : (user as any).role === 'manager' ? '#c4b5fd' : '#a78bfa',
+                  color: (user as any).role === 'admin' ? '#d8b4fe' : '#a78bfa',
                   letterSpacing: '0.5px',
-                  border: '1px solid ' + ((user as any).role === 'admin' ? 'rgba(168, 85, 247, 0.2)' : (user as any).role === 'manager' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(167, 139, 250, 0.1)')
+                  border: '1px solid ' + ((user as any).role === 'admin' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(167, 139, 250, 0.1)')
                 }}>
-                  {(user as any).role === 'admin' ? 'Admin' : (user as any).role === 'manager' ? 'Gerente' : 'Funcionário'}
+                  {(user as any).role === 'admin' ? 'Admin' : 'Usuário'}
                 </div>
                 
                 {team && (
                   <div style={{ 
-                    padding: '4px 12px',
-                    background: 'rgba(99, 102, 241, 0.05)',
-                    borderRadius: '10px',
-                    fontSize: '0.75rem',
-                    fontWeight: '700',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    color: 'var(--primary)',
-                    border: '1px solid rgba(99, 102, 241, 0.2)'
+                    padding: '4px 12px', background: 'rgba(168, 85, 247, 0.05)', borderRadius: '10px', fontSize: '0.75rem', 
+                    fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.2)' 
                   }}>
-                    <Layers size={14} /> {team.name}
+                    <ShieldCheck size={14} /> {team.name} (Principal)
                   </div>
                 )}
+                {((user as any).userTeams || []).map((ut: any) => (
+                  <div key={ut.teamId} style={{ 
+                    padding: '4px 12px', background: ut.role === 'manager' ? 'rgba(139, 92, 246, 0.05)' : 'rgba(99, 102, 241, 0.05)', 
+                    borderRadius: '10px', fontSize: '0.75rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px', 
+                    color: ut.role === 'manager' ? '#c4b5fd' : 'var(--primary)', border: ut.role === 'manager' ? '1px solid rgba(139, 92, 246, 0.2)' : '1px solid rgba(99, 102, 241, 0.2)' 
+                  }}>
+                    <Layers size={14} /> {ut.teamName} {ut.role === 'manager' ? '· Ger.' : ''}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

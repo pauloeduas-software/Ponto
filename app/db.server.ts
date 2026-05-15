@@ -90,6 +90,31 @@ db.exec(`
   )
 `);
 
+// Tabela de vínculos N:N entre usuários e equipes (com cargo por equipe)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS UserTeam (
+    userId TEXT NOT NULL,
+    teamId TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'employee',
+    PRIMARY KEY (userId, teamId),
+    FOREIGN KEY (userId) REFERENCES User(id),
+    FOREIGN KEY (teamId) REFERENCES Team(id)
+  )
+`);
+
+// MIGRAÇÃO: popula UserTeam a partir dos vínculos existentes em User.teamId
+// Só insere se ainda não existir o registro (idempotente)
+try {
+  db.exec(`
+    INSERT OR IGNORE INTO UserTeam (userId, teamId, role)
+    SELECT id, teamId, role
+    FROM User
+    WHERE teamId IS NOT NULL AND role IN ('manager', 'employee')
+  `);
+} catch (e) {
+  // Migração já executada ou erro ignorável
+}
+
 // ÍNDICES EXTRAS PARA PERFORMANCE (Admin/Dashboard)
 db.exec("CREATE INDEX IF NOT EXISTS idx_punch_date ON PunchRecord(date)");
 db.exec("CREATE INDEX IF NOT EXISTS idx_shift_date ON Shift(date)");

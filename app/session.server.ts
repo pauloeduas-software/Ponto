@@ -37,7 +37,16 @@ export async function getUser(request: Request) {
   try {
     const user = db.prepare("SELECT id, username, name, role, goal, avatarUrl, teamId FROM User WHERE id = ?").get(userId);
     if (!user) return null;
-    return user;
+
+    // Busca todos os vínculos de equipe do usuário (para suporte a múltiplas equipes)
+    const userTeams = db.prepare(`
+      SELECT ut.teamId, ut.role, t.name as teamName
+      FROM UserTeam ut
+      JOIN Team t ON ut.teamId = t.id
+      WHERE ut.userId = ?
+    `).all(userId);
+
+    return { ...user as object, userTeams };
   } catch {
     return null;
   }

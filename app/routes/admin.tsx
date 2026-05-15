@@ -32,13 +32,19 @@ export async function loader({ request }: { request: Request }) {
   const user = await getUser(request) as any;
   const url = new URL(request.url);
   const viewParam = url.searchParams.get("view") || "team";
+  const selectedManagerTeamId = url.searchParams.get("teamFilter") || null;
 
-  if (user.role !== "admin" && user.role !== "manager") {
+  // Admins e Managers (via UserTeam) podem acessar
+  const isAdmin = user.role === "admin";
+  const managerTeams = (user.userTeams || []).filter((ut: any) => ut.role === 'manager');
+  const isManager = managerTeams.length > 0;
+
+  if (!isAdmin && !isManager) {
     throw new Response("Acesso negado", { status: 403 });
   }
 
   // Se for Admin e pedir visão de equipe, ou se for Manager (que sempre vê equipe)
-  const isTeamView = viewParam === "team" || user.role === "manager";
+  const isTeamView = isAdmin ? (viewParam === "team") : true;
 
   let employeesQuery = `
     SELECT u.id, u.name, u.role, u.avatarUrl, u.teamId, t.name as teamName 
@@ -47,22 +53,57 @@ export async function loader({ request }: { request: Request }) {
   `;
   let recordsQuery = "SELECT * FROM PunchRecord";
   let params: any[] = [];
+  let teamName = "Geral";
 
-  if (isTeamView && user.teamId) {
-    employeesQuery += " WHERE u.teamId = ?";
-    recordsQuery = "SELECT r.* FROM PunchRecord r JOIN User u ON r.userId = u.id WHERE u.teamId = ?";
-    params = [user.teamId];
+  const activeTeamId = selectedManagerTeamId || managerTeams[0]?.teamId || user.teamId || (user.userTeams || [])[0]?.teamId || null;
+
+  if (isAdmin) {
+    // Admin em visão global: sem filtro, sempre traz todos
+  } else if (activeTeamId) {
+    // Visão de equipe (Manager com equipe selecionada)
+    employeesQuery = `
+      SELECT DISTINCT u.id, u.name, u.role, u.avatarUrl, u.teamId, t.name as teamName
+      FROM User u
+      LEFT JOIN UserTeam ut ON u.id = ut.userId
+      LEFT JOIN Team t ON ut.teamId = t.id OR u.teamId = t.id
+      WHERE ut.teamId = ? OR u.teamId = ?
+    `;
+    recordsQuery = `
+      SELECT DISTINCT r.* FROM PunchRecord r
+      JOIN User u ON r.userId = u.id
+      LEFT JOIN UserTeam ut ON r.userId = ut.userId
+      WHERE ut.teamId = ? OR u.teamId = ?
+    `;
+    params = [activeTeamId, activeTeamId];
+    const team = db.prepare("SELECT name FROM Team WHERE id = ?").get(activeTeamId) as any;
+    teamName = team?.name || "Equipe";
+  } else {
+    // Manager sem nenhuma equipe vinculada
+    employeesQuery += " WHERE 1=0";
+    recordsQuery += " WHERE 1=0";
+    teamName = "Sem Equipe";
   }
 
   const employees = db.prepare(employeesQuery).all(...params) as any[];
-  const allRecords = db.prepare(recordsQuery).all(...params) as any[];
 
-  // Buscar nome da equipe se estiver na visão de equipe
-  let teamName = "Geral";
-  if (isTeamView && user.teamId) {
-    const team = db.prepare("SELECT name FROM Team WHERE id = ?").get(user.teamId) as any;
-    teamName = team?.name || "Equipe";
+  // Attach userTeams
+  const allUserTeams = db.prepare(`
+    SELECT ut.userId, ut.teamId, ut.role, t.name as teamName
+    FROM UserTeam ut
+    JOIN Team t ON ut.teamId = t.id
+  `).all() as any[];
+  
+  const userTeamsMap: Record<string, any[]> = {};
+  for (const link of allUserTeams) {
+    if (!userTeamsMap[link.userId]) userTeamsMap[link.userId] = [];
+    userTeamsMap[link.userId].push(link);
   }
+
+  employees.forEach(emp => {
+    emp.userTeams = userTeamsMap[emp.id] || [];
+  });
+
+  const allRecords = db.prepare(recordsQuery).all(...params) as any[];
 
   const historyData: Record<string, SavedDay[]> = {};
   allRecords.forEach(r => {
@@ -81,14 +122,16 @@ export async function loader({ request }: { request: Request }) {
   });
 
   const teams = db.prepare("SELECT * FROM Team ORDER BY name").all() as any[];
+  const activeManagerTeamId = isManager ? (selectedManagerTeamId || managerTeams[0]?.teamId || null) : null;
 
-  return { user, employees, historyData, teamName, isTeamView, teams };
+  return { user, employees, historyData, teamName, teams, managerTeams, isManager, isAdmin, activeManagerTeamId };
 }
 
 export default function Admin() {
-  const { user, employees, historyData, teamName, isTeamView, teams } = useLoaderData<typeof loader>();
+  const { user, employees, historyData, teamName, teams, managerTeams, isManager, isAdmin, activeManagerTeamId } = useLoaderData<typeof loader>();
 
-  const [selectedTeamId, setSelectedTeamId] = useState<string>("todos");
+  const userFirstTeamId = user.teamId || (user.userTeams && user.userTeams.length > 0 ? user.userTeams[0].teamId : null) || "todos";
+  const [selectedTeamId, setSelectedTeamId] = useState<string>(isAdmin ? userFirstTeamId : "todos");
   const [selectedUserId, setSelectedUserId] = useState<string>("todos");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }));
@@ -109,7 +152,10 @@ export default function Admin() {
 
   const filteredEmployees = useMemo(() => {
     if (selectedTeamId === "todos") return employees;
-    return employees.filter(emp => emp.teamId === selectedTeamId);
+    return employees.filter(emp => 
+      emp.teamId === selectedTeamId || 
+      (emp.userTeams && emp.userTeams.some((ut: any) => ut.teamId === selectedTeamId))
+    );
   }, [employees, selectedTeamId]);
 
   const selectedDayGlobalData = useMemo(() => {
@@ -168,13 +214,7 @@ export default function Admin() {
           </div>
 
           <div className="header-row-2">
-            <div className="toggles-group">
-              {user.role === 'admin' && (
-                <div className="toggle-container-new">
-                  <a href="/admin?view=global" className={`view-toggle-new ${!isTeamView ? 'active' : ''}`}>Global</a>
-                  <a href="/admin?view=team" className={`view-toggle-new ${isTeamView ? 'active' : ''}`}>Minha Equipe</a>
-                </div>
-              )}
+            <div className="toggles-group" style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
               <div className="toggle-container-new">
                 <button
                   onClick={() => setCalendarView('grid')}
@@ -197,15 +237,15 @@ export default function Admin() {
         </div>
 
         <div style={{ marginBottom: '24px' }}>
-          {!isTeamView ? (
-            <>
-              <div className="filters-grid-new">
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <div className="label-container">
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Layers size={12} /> Filtrar Equipe
-                    </label>
-                  </div>
+          <div className="filters-grid-new">
+            {(isAdmin || managerTeams.length > 0) && (
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <div className="label-container">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Layers size={12} /> Filtrar Equipe
+                  </label>
+                </div>
+                {isAdmin ? (
                   <select
                     value={selectedTeamId}
                     onChange={(e) => {
@@ -219,63 +259,47 @@ export default function Admin() {
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>
-                </div>
-
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <div className="label-container">
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Filter size={12} /> Filtrar Colaborador
-                    </label>
-                  </div>
+                ) : (
                   <select
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    value={activeManagerTeamId || managerTeams[0]?.teamId}
+                    onChange={(e) => {
+                      window.location.href = `/admin?teamFilter=${e.target.value}`;
+                    }}
                     className="custom-select"
                   >
-                    <option value="todos">Todos</option>
-                    {filteredEmployees.map(emp => (
-                      <option key={emp.id} value={emp.id}>{emp.name}</option>
+                    {managerTeams.map((mt: any) => (
+                      <option key={mt.teamId} value={mt.teamId}>{mt.teamName}</option>
                     ))}
                   </select>
-                </div>
+                )}
               </div>
-              {selectedUserId !== "todos" && selectedUserBalances && (
-                <div className="balance-mini-left">
-                  <span className="label">Saldo do Mês:</span>
-                  <span className={`value ${selectedUserBalances.monthly >= 0 ? 'overtime' : 'missing'}`}>
-                    {minutesToHHMM(Math.abs(selectedUserBalances.monthly))}
-                  </span>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="input-group" style={{ marginBottom: 0 }}>
-                <div className="label-container">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Filter size={12} /> Filtrar Colaborador
-                  </label>
-                </div>
-                <select
-                  value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="custom-select"
-                >
-                  <option value="todos">Toda a Equipe</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.name}</option>
-                  ))}
-                </select>
+            )}
+
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <div className="label-container">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Filter size={12} /> Filtrar Colaborador
+                </label>
               </div>
-              {selectedUserId !== "todos" && selectedUserBalances && (
-                <div className="balance-mini-left">
-                  <span className="label">Saldo do Mês:</span>
-                  <span className={`value ${selectedUserBalances.monthly >= 0 ? 'overtime' : 'missing'}`}>
-                    {minutesToHHMM(Math.abs(selectedUserBalances.monthly))}
-                  </span>
-                </div>
-              )}
-            </>
+              <select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                className="custom-select"
+              >
+                <option value="todos">Todos</option>
+                {filteredEmployees.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {selectedUserId !== "todos" && selectedUserBalances && (
+            <div className="balance-mini-left" style={{ marginTop: '16px' }}>
+              <span className="label">Saldo do Mês:</span>
+              <span className={`value ${selectedUserBalances.monthly >= 0 ? 'overtime' : 'missing'}`}>
+                {minutesToHHMM(Math.abs(selectedUserBalances.monthly))}
+              </span>
+            </div>
           )}
         </div>
 

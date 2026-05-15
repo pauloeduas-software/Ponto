@@ -1,3 +1,9 @@
+export interface UserTeamMembership {
+  teamId: string;
+  teamName: string;
+  role: 'manager' | 'employee';
+}
+
 export interface User {
   id: string;
   name: string;
@@ -6,6 +12,7 @@ export interface User {
   teamId?: string;
   avatarUrl?: string;
   goal?: string;
+  userTeams?: UserTeamMembership[];
 }
 
 export interface Shift {

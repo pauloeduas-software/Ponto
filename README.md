@@ -22,12 +22,11 @@ O **Ponto** é uma solução corporativa robusta para controle de jornada de tra
 - **🛡️ Painel de Gestão Avançado:** 
     - Criação e organização de equipes.
     - **Reset de Senha:** Administradores podem redefinir senhas de usuários diretamente pela interface.
-    - **Exclusão 
-- **🏢 Estrutura Hierárquica (Multi-Team):** Organização completa por equipes. Suporte a diferentes níveis de acesso:
-    - **Super:** Visão global de todas as equipes, gestão de cargos e controle total do sistema.
-    - **Gerente:** Gestão focada exclusivamente nos seus subordinados.
-    - **Funcionário:** Registro individual e consulta de escala própria.
-de Contas:** Remoção permanente de usuários com limpeza automática de registros vinculados.
+    - **Exclusão de Contas:** Remoção permanente de usuários com limpeza automática de registros vinculados.
+- **🏢 Múltiplos Vínculos e Acesso Granular:**
+    - **Multi-Equipes:** Suporte estrutural para que o mesmo colaborador pertença a várias equipes de forma simultânea.
+    - **Cargos Independentes por Contexto:** Um usuário pode ser *Gerente* na "Equipe A" e um *Funcionário* comum na "Equipe B". O sistema adequa as permissões dinamicamente.
+    - **Admin:** Acesso irrestrito a todos os setores de forma unificada.
 - **🔐 Segurança e Hardening:**
    - Senhas criptografadas com bcrypt.
    - Sessões protegidas com cookies HttpOnly e política SameSite: Strict.
