@@ -1,6 +1,6 @@
 import { Clock, Timer, TrendingUp, TrendingDown } from "lucide-react";
 
-interface DayDetailsProps {
+interface DayInfoProps {
   punches?: string[] | null;
   worked?: string;
   goal?: string;
@@ -9,14 +9,14 @@ interface DayDetailsProps {
   showGoal?: boolean;
 }
 
-export function DayDetails({
+export function DayInfo({
   punches = [],
   worked = "00:00",
   goal,
   diff = "00:00",
   isOvertime = false,
   showGoal = true
-}: DayDetailsProps) {
+}: DayInfoProps) {
   const safePunches = punches || [];
   const punchPairsCount = Math.ceil(safePunches.length / 2);
 

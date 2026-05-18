@@ -164,69 +164,69 @@ export default function Management() {
   return (
     <div className="container">
       <div className="card">
-        <div className="header" style={{ marginBottom: '32px' }}>
+        <div className="header management-header">
           <div>
             <h1>Gestão de Equipes</h1>
             <p className="subtitle">Membros e Acessos da Organização</p>
           </div>
-          <button className="btn-register" style={{ width: 'auto', padding: '12px 20px', background: 'var(--accent-gradient)' }} onClick={() => setIsTeamModalOpen(true)}>
+          <button className="btn-register btn-teams-action" onClick={() => setIsTeamModalOpen(true)}>
             <Plus size={18} /> Equipes
           </button>
         </div>
 
         <div className="history-list">
           {users.map(u => (
-            <div key={u.id} style={{ padding: '16px 20px', marginBottom: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div key={u.id} className="user-card-item">
+              <div className="user-card-profile-col">
                 <Avatar src={u.avatarUrl} name={u.name} size={48} />
                 <div>
-                  <div style={{ fontWeight: '700', fontSize: '1rem', color: 'white' }}>{u.name} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '400', marginLeft: '4px' }}>@{u.username}</span></div>
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.65rem', padding: '3px 10px', borderRadius: '8px', background: u.role === 'admin' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255,255,255,0.06)', color: u.role === 'admin' ? '#d8b4fe' : 'var(--text-muted)', border: u.role === 'admin' ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid var(--glass-border)', textTransform: 'uppercase', fontWeight: '800' }}>
+                  <div className="user-card-name-row">{u.name} <span className="user-card-username">@{u.username}</span></div>
+                  <div className="user-card-badge-row">
+                    <span className={u.role === 'admin' ? 'badge-role-admin' : 'badge-role-user'}>
                       {u.role === 'admin' ? 'Admin' : 'Usuário'}
                     </span>
                     {u.teamName && (
-                      <span style={{ fontSize: '0.65rem', padding: '3px 10px', borderRadius: '8px', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--primary)', border: '1px solid rgba(99, 102, 241, 0.25)', fontWeight: '600' }}>
+                      <span className="badge-team-primary">
                         {u.teamName}
                       </span>
                     )}
                     {(u.userTeams || []).map((ut: any) => (
-                      <span key={ut.teamId} style={{ fontSize: '0.65rem', padding: '3px 10px', borderRadius: '8px', background: ut.role === 'manager' ? 'rgba(139, 92, 246, 0.18)' : 'rgba(99, 102, 241, 0.10)', color: ut.role === 'manager' ? '#c4b5fd' : 'var(--primary)', border: ut.role === 'manager' ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(99, 102, 241, 0.2)', fontWeight: '600' }}>
+                      <span key={ut.teamId} className={ut.role === 'manager' ? 'badge-team-manager' : 'badge-team-employee'}>
                         {ut.teamName}{ut.role === 'manager' ? ' · Ger.' : ''}
                       </span>
                     ))}
                     {!u.teamId && (!u.userTeams || u.userTeams.length === 0) && (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Sem equipe</span>
+                      <span className="badge-team-empty">Sem equipe</span>
                     )}
                   </div>
                 </div>
               </div>
-              <button className="icon-btn" style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }} onClick={() => setEditingUserId(u.id)}><Edit3 size={18} /></button>
+              <button className="icon-btn btn-user-edit" onClick={() => setEditingUserId(u.id)}><Edit3 size={18} /></button>
             </div>
           ))}
         </div>
       </div>
 
       <Modal isOpen={isTeamModalOpen} onClose={() => setIsTeamModalOpen(false)} title="Gerenciar Equipes" icon={<Layers size={20} />}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div className="modal-grid-gap-32">
           <fetcher.Form method="post" ref={teamFormRef}>
             <input type="hidden" name="_action" value="createTeam" />
-            <div className="input-group"><label style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px', display: 'block' }}>Criar Nova Equipe</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="text" name="name" required placeholder="Nome da equipe" style={{ margin: 0, height: '54px' }} />
-                <button type="submit" className="btn-register" style={{ width: 'auto', padding: '0 25px', height: '54px', margin: 0, borderRadius: '16px' }}>Criar</button>
+            <div className="input-group"><label className="modal-section-label-uppercase">Criar Nova Equipe</label>
+              <div className="modal-row-gap-8">
+                <input type="text" name="name" required placeholder="Nome da equipe" className="input-team-name" />
+                <button type="submit" className="btn-register modal-input-large-btn">Criar</button>
               </div>
             </div>
           </fetcher.Form>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px' }}>
-            <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>Equipes Atuais</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="modal-divider-top">
+            <h3 className="modal-section-label-uppercase">Equipes Atuais</h3>
+            <div className="modal-grid-gap-8">
               {teams.map(t => (
-                <div key={t.id} style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontWeight: '600' }}>{t.name}</span>
+                <div key={t.id} className="team-list-card-item">
+                  <span className="team-list-name">{t.name}</span>
                   <fetcher.Form method="post" onSubmit={(e) => !confirm(`Excluir equipe "${t.name}"?`) && e.preventDefault()}>
                     <input type="hidden" name="_action" value="deleteTeam" /><input type="hidden" name="teamId" value={t.id} />
-                    <button type="submit" className="icon-btn" style={{ color: '#ef4444', background: 'transparent' }}><Trash2 size={16} /></button>
+                    <button type="submit" className="icon-btn btn-icon-red-transparent"><Trash2 size={16} /></button>
                   </fetcher.Form>
                 </div>
               ))}
@@ -237,88 +237,67 @@ export default function Management() {
 
       <Modal isOpen={!!editingUserId} onClose={() => setEditingUserId(null)} title="Editar Acesso" icon={<ShieldCheck size={20} />}>
         {currentUser && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="modal-grid-gap-24">
             <div>
-              <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px', display: 'block' }}>Equipes e Cargos</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+              <label className="modal-label-small-uppercase">Equipes e Cargos</label>
+              <div className="modal-grid-gap-8 modal-team-list-container">
                 {currentUser.teamId && currentUser.teamName && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(168, 85, 247, 0.05)', border: '1px solid rgba(168, 85, 247, 0.2)', borderRadius: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <ShieldCheck size={14} style={{ color: '#d8b4fe' }} />
-                      <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{currentUser.teamName} (Principal)</span>
+                  <div className="user-team-primary-container">
+                    <div className="user-team-primary-left">
+                      <ShieldCheck size={14} className="icon-shield-purple" />
+                      <span className="user-team-primary-text">{currentUser.teamName} (Principal)</span>
                     </div>
-                    <fetcher.Form method="post" style={{ margin: 0 }}>
+                    <fetcher.Form method="post" className="form-no-margin">
                       <input type="hidden" name="_action" value="removePrimaryTeam" /><input type="hidden" name="userId" value={currentUser.id} />
-                      <button type="submit" className="icon-btn" style={{ color: '#ef4444', background: 'transparent' }}><Trash2 size={14} /></button>
+                      <button type="submit" className="icon-btn btn-icon-red-transparent"><Trash2 size={14} /></button>
                     </fetcher.Form>
                   </div>
                 )}
                 {(currentUser.userTeams || []).map((ut: any) => (
-                  <div key={ut.teamId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}>
-                    <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{ut.teamName}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <fetcher.Form method="post" style={{ margin: 0 }}>
+                  <div key={ut.teamId} className="user-team-link-row">
+                    <span className="user-team-name-text">{ut.teamName}</span>
+                    <div className="user-team-link-actions">
+                      <fetcher.Form method="post" className="form-no-margin">
                         <input type="hidden" name="_action" value="updateUserTeamRole" /><input type="hidden" name="userId" value={currentUser.id} /><input type="hidden" name="teamId" value={ut.teamId} />
-                        <select name="role" defaultValue={ut.role} onChange={(e) => fetcher.submit(e.currentTarget.form)} style={{ padding: '6px 10px', fontSize: '0.75rem', borderRadius: '8px', margin: 0, width: 'auto' }}>
+                        <select name="role" defaultValue={ut.role} onChange={(e) => fetcher.submit(e.currentTarget.form)} className="user-team-link-select">
                           <option value="employee">Funcionário</option><option value="manager">Gerente</option>
                         </select>
                       </fetcher.Form>
-                      <fetcher.Form method="post" style={{ margin: 0 }}>
+                      <fetcher.Form method="post" className="form-no-margin">
                         <input type="hidden" name="_action" value="removeUserTeam" /><input type="hidden" name="userId" value={currentUser.id} /><input type="hidden" name="teamId" value={ut.teamId} />
-                        <button type="submit" className="icon-btn" style={{ color: '#ef4444', background: 'transparent' }}><Trash2 size={14} /></button>
+                        <button type="submit" className="icon-btn btn-icon-red-transparent"><Trash2 size={14} /></button>
                       </fetcher.Form>
                     </div>
                   </div>
                 ))}
                 {!currentUser.teamId && (currentUser.userTeams || []).length === 0 && (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '12px' }}>Nenhuma equipe vinculada ainda.</p>
+                  <p className="modal-empty-text">Nenhuma equipe vinculada ainda.</p>
                 )}
               </div>
               <fetcher.Form method="post">
                 <input type="hidden" name="_action" value="addUserTeam" /><input type="hidden" name="userId" value={currentUser.id} />
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <select name="teamId" style={{ flex: 2, padding: '10px 12px', fontSize: '0.85rem', borderRadius: '12px' }} onChange={(e) => e.target.value && fetcher.submit(e.currentTarget.form)}>
+                <div className="modal-row-gap-8">
+                  <select name="teamId" className="select-team-add" onChange={(e) => e.target.value && fetcher.submit(e.currentTarget.form)}>
                     <option value="">+ Adicionar equipe...</option>
                     {teams.filter(t => t.id !== currentUser.teamId && !(currentUser.userTeams || []).some((ut: any) => ut.teamId === t.id)).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
-                  <select name="role" style={{ flex: 1, padding: '10px 12px', fontSize: '0.85rem', borderRadius: '12px' }}><option value="employee">Funcionário</option><option value="manager">Gerente</option></select>
+                  <select name="role" className="select-role-add"><option value="employee">Funcionário</option><option value="manager">Gerente</option></select>
                 </div>
               </fetcher.Form>
             </div>
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px' }}>
+            <div className="modal-divider-top">
               <fetcher.Form method="post">
-                <input type="hidden" name="_action" value="changePassword" /><input type="hidden" name="userId" value={currentUser.id} /><label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Alterar Senha</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input type="text" name="newPassword" placeholder="Nova senha" style={{ flex: 1, margin: 0 }} />
-                  <button type="submit" className="btn-register" style={{ width: 'auto', padding: '0 20px' }}>Salvar</button>
+                <input type="hidden" name="_action" value="changePassword" /><input type="hidden" name="userId" value={currentUser.id} /><label className="modal-label-small-uppercase">Alterar Senha</label>
+                <div className="modal-row-gap-8">
+                  <input type="text" name="newPassword" placeholder="Nova senha" className="input-password-change" />
+                  <button type="submit" className="btn-register btn-save-password">Salvar</button>
                 </div>
               </fetcher.Form>
             </div>
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px' }}>
+            <div className="modal-divider-top">
               <fetcher.Form method="post" onSubmit={(e) => !confirm("Excluir usuário permanentemente?") && e.preventDefault()}>
                 <input type="hidden" name="_action" value="deleteUser" /><input type="hidden" name="userId" value={currentUser.id} />
-                <button type="submit" style={{
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  color: '#ef4444',
-                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '12px 24px',
-                  borderRadius: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                  }}
-                >
+                <button type="submit" className="btn-delete-user-glass">
                   <Trash2 size={16} /> Excluir Usuário
                 </button>
               </fetcher.Form>

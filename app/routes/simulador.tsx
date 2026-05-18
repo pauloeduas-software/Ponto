@@ -79,9 +79,9 @@ export default function Simulador() {
   }, [results]);
 
   return (
-    <div className="container" style={{ alignItems: 'center' }}>
-      <div className="card" style={{ maxWidth: '900px', width: '100%' }}>
-        <div className="header" style={{ marginBottom: '16px' }}>
+    <div className="container simulador-container">
+      <div className="card simulador-card">
+        <div className="header simulador-header">
           <div>
             <h1>Simulador</h1>
           </div>
@@ -120,7 +120,7 @@ export default function Simulador() {
 
                 {/* Colunas do Desktop (que se adaptam no mobile) */}
                 <div className="col-name desktop-only"><strong>{d.name}</strong></div>
-                <div className="day-field"><label className="mob-label">Meta</label><input value={d.goal} onChange={e => updateField(d.id, 'goal', e.target.value)} maxLength={5} style={{ color: 'var(--primary)' }} /></div>
+                <div className="day-field goal"><label className="mob-label">Meta</label><input value={d.goal} onChange={e => updateField(d.id, 'goal', e.target.value)} maxLength={5} /></div>
                 <div className="day-field"><label className="mob-label">Entrada</label><input placeholder="--:--" value={d.start} onChange={e => updateField(d.id, 'start', e.target.value)} maxLength={5} /></div>
                 <div className="day-field"><label className="mob-label">Saída</label><input placeholder="--:--" value={d.end} onChange={e => updateField(d.id, 'end', e.target.value)} maxLength={5} /></div>
                 <div className="day-field"><label className="mob-label">Almoço</label><input placeholder="00:00" value={d.break} onChange={e => updateField(d.id, 'break', e.target.value)} maxLength={5} /></div>

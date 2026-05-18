@@ -1,19 +1,19 @@
 import { useMemo } from "react";
 import { getDaysInMonth, type CalendarDay } from "../utils/calendar";
 
-interface WeeklyScheduleListProps {
+interface CalendarVerticalProps {
   currentDate: Date;
   onDayClick: (dateStr: string) => void;
   renderRowContent: (day: CalendarDay) => React.ReactNode;
   renderRowSide?: (day: CalendarDay) => React.ReactNode;
 }
 
-export function WeeklyScheduleList({
+export function CalendarVertical({
   currentDate,
   onDayClick,
   renderRowContent,
   renderRowSide
-}: WeeklyScheduleListProps) {
+}: CalendarVerticalProps) {
   const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
   
   const validDays = useMemo(() => {

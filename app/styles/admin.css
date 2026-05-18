@@ -232,3 +232,133 @@
 }
 
 /* Reusable schedule and avatar styles are imported from calendar.css */
+
+/* Refactored Layout Classes to replace inline styles */
+.admin-header-actions {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.filters-wrapper-new {
+  margin-bottom: 24px;
+}
+
+.label-icon-flex {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input-group-no-margin {
+  margin-bottom: 0 !important;
+}
+
+.balance-left-spaced {
+  margin-top: 16px;
+}
+
+.avatar-stack-left-aligned {
+  justify-content: flex-start !important;
+}
+
+.admin-history-scroll {
+  padding-right: 4px;
+}
+
+.admin-history-card {
+  padding: 16px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+}
+
+.admin-history-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-summary-punches {
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-summary-punch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 6px;
+}
+
+.admin-summary-punch-row.has-border {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.admin-summary-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-summary-col.align-right {
+  align-items: flex-end;
+}
+
+.admin-summary-meta {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.admin-summary-time {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.admin-summary-arrow {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.admin-summary-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.mini-info-box {
+  padding: 10px !important;
+}
+
+.mini-info-value {
+  font-size: 0.8rem !important;
+}
+
+.admin-history-avatar {
+  border-radius: 10px !important;
+  flex-shrink: 0;
+}
+
+.emp-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.emp-details-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.emp-details-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+

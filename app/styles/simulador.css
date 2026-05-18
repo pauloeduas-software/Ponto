@@ -196,3 +196,22 @@
     justify-content: center;
   }
 }
+
+/* Simulador Refactored Layout Classes to replace inline styles */
+.simulador-container {
+  align-items: center;
+}
+
+.simulador-card {
+  max-width: 900px;
+  width: 100%;
+}
+
+.simulador-header {
+  margin-bottom: 16px;
+}
+
+.day-field.goal input {
+  color: var(--primary) !important;
+}
+

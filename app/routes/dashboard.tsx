@@ -18,11 +18,11 @@ import { useLoaderData, useFetcher } from "react-router";
 import { type SavedDay } from "../types";
 import { minutesToTime, timeToMinutes, minutesToHHMM, formatTimeInput } from "../utils/time";
 import { Modal } from "../components/Modal";
-import { StatCard } from "../components/StatCard";
+import { InfoCard } from "../components/InfoCard";
 import { CalendarGrid } from "../components/CalendarGrid";
-import { WeeklyScheduleList } from "../components/WeeklyScheduleList";
-import { MonthNavigator } from "../components/MonthNavigator";
-import { DayDetails } from "../components/DayDetails";
+import { CalendarVertical } from "../components/CalendarVertical";
+import { MonthSelector } from "../components/MonthSelector";
+import { DayInfo } from "../components/DayInfo";
 import "../styles/calendar.css";
 import "../styles/dashboard.css";
 import { db } from "../db.server";
@@ -178,10 +178,10 @@ export default function Dashboard() {
         <div className="admin-header-new">
           <div className="header-row-1">
             <h1>Histórico de Ponto</h1>
-            <MonthNavigator currentDate={currentDate} onChangeMonth={changeMonth} />
+            <MonthSelector currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
 
-          <div className="header-row-2" style={{ marginBottom: '-8px' }}>
+          <div className="header-row-2 dashboard-sub-header">
             <div className="toggle-container-new">
               <button 
                 onClick={() => setCalendarView('grid')} 
@@ -223,7 +223,7 @@ export default function Dashboard() {
             }}
           />
         ) : (
-          <WeeklyScheduleList
+          <CalendarVertical
             currentDate={currentDate}
             onDayClick={handleDayClick}
             renderRowContent={(wd) => {
@@ -270,39 +270,30 @@ export default function Dashboard() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={new Date(selectedDateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-        icon={<CalendarIcon size={20} style={{ color: 'var(--primary)' }} />}
+        icon={<CalendarIcon size={20} color="var(--primary)" />}
         className="large"
       >
-        <div className="details-grid" style={{ gridTemplateColumns: '1fr', gap: '16px' }}>
+        <div className="details-grid dashboard-modal-grid">
           {isEditing ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ padding: '16px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '16px', border: '1px solid rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="dashboard-modal-edit-column">
+              <div className="dashboard-modal-goal-banner">
                 <div>
-                  <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>Meta deste Dia</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Alterar meta apenas para esta data</div>
+                  <div className="dashboard-modal-goal-title">Meta deste Dia</div>
+                  <div className="dashboard-modal-goal-desc">Alterar meta apenas para esta data</div>
                 </div>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <div className="dashboard-modal-goal-input-wrapper">
                   <input
                     type="text"
                     inputMode="numeric"
                     value={editGoal}
                     maxLength={5}
                     onChange={(e) => setEditGoal(formatTimeInput(e.target.value))}
-                    style={{
-                      width: '100px',
-                      background: 'rgba(0,0,0,0.3)',
-                      border: '1px solid var(--glass-border)',
-                      borderRadius: '10px',
-                      padding: '6px 30px 6px 10px',
-                      color: 'white',
-                      fontWeight: '700',
-                      textAlign: 'center'
-                    }}
+                    className="dashboard-modal-goal-input"
                   />
-                  <Clock size={14} color="white" style={{ position: 'absolute', right: '10px', opacity: 0.6 }} />
+                  <Clock size={14} color="white" className="dashboard-modal-goal-input-icon" />
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="dashboard-modal-punches-list">
                 {(() => {
                   const pairsToShow = Math.max(1, Math.ceil(editPunches.length / 2) + (editPunches.length > 0 && editPunches.length % 2 === 0 && editPunches[editPunches.length - 1] !== "" ? 1 : 0));
 
@@ -328,19 +319,15 @@ export default function Dashboard() {
                     }
 
                     return (
-                      <div key={i} style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '16px', position: 'relative',
-                        background: isInv ? 'rgba(255, 68, 68, 0.05)' : 'rgba(255,255,255,0.03)',
-                        border: isInv ? '1px solid #ff4444' : '1px solid var(--glass-border)',
-                      }}>
+                      <div key={i} className={`dashboard-modal-punch-card ${isInv ? 'invalid' : ''}`}>
                         {isInv && (
-                          <span style={{ position: 'absolute', top: '-8px', right: '12px', background: '#ff4444', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                          <span className="dashboard-modal-error-badge">
                             {errorMsg}
                           </span>
                         )}
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
-                          <label style={{ fontSize: '0.6rem', color: isInv ? '#ff4444' : 'var(--text-muted)' }}>Entrada</label>
-                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <div className="dashboard-modal-input-col">
+                          <label className={`dashboard-modal-label ${isInv ? 'invalid' : ''}`}>Entrada</label>
+                          <div className="dashboard-modal-input-row">
                             <input
                               type="text"
                               inputMode="numeric"
@@ -348,15 +335,15 @@ export default function Dashboard() {
                               value={sVal || ""}
                               maxLength={5}
                               onChange={e => updatePunch(sIdx, formatTimeInput(e.target.value))}
-                              style={{ borderColor: isInv ? '#ff4444' : '', textAlign: 'center', fontSize: '0.9rem' }}
+                              className={isInv ? 'invalid' : ''}
                             />
-                            {sVal && <button onClick={() => updatePunch(sIdx, "")} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#f87171', borderRadius: '6px', width: '24px', height: '24px', cursor: 'pointer' }}>✕</button>}
+                            {sVal && <button onClick={() => updatePunch(sIdx, "")} className="dashboard-modal-clear-btn">✕</button>}
                           </div>
                         </div>
-                        <ArrowRight size={12} style={{ marginTop: '16px', color: 'var(--text-muted)' }} />
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
-                          <label style={{ fontSize: '0.6rem', color: isInv ? '#ff4444' : 'var(--text-muted)' }}>Saída</label>
-                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <ArrowRight size={12} className="dashboard-modal-arrow" />
+                        <div className="dashboard-modal-input-col">
+                          <label className={`dashboard-modal-label ${isInv ? 'invalid' : ''}`}>Saída</label>
+                          <div className="dashboard-modal-input-row">
                             <input
                               type="text"
                               inputMode="numeric"
@@ -364,9 +351,9 @@ export default function Dashboard() {
                               value={eVal || ""}
                               maxLength={5}
                               onChange={e => updatePunch(eIdx, formatTimeInput(e.target.value))}
-                              style={{ borderColor: isInv ? '#ff4444' : '', textAlign: 'center', fontSize: '0.9rem' }}
+                              className={isInv ? 'invalid' : ''}
                             />
-                            {eVal && <button onClick={() => updatePunch(eIdx, "")} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#f87171', borderRadius: '6px', width: '24px', height: '24px', cursor: 'pointer' }}>✕</button>}
+                            {eVal && <button onClick={() => updatePunch(eIdx, "")} className="dashboard-modal-clear-btn">✕</button>}
                           </div>
                         </div>
                       </div>
@@ -374,14 +361,14 @@ export default function Dashboard() {
                   });
                 })()}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="dashboard-modal-actions-grid">
                 <button className="btn-register" onClick={handleSaveEdit}>{fetcher.state !== "idle" ? <Loader2 size={16} className="animate-spin" /> : "Salvar"}</button>
-                <button className="btn-register" onClick={() => setIsEditing(false)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none' }}>Cancelar</button>
+                <button className="btn-register btn-cancel-glass" onClick={() => setIsEditing(false)}>Cancelar</button>
               </div>
             </div>
           ) : selectedDayData ? (
             <>
-              <DayDetails
+              <DayInfo
                 punches={selectedDayData.punches}
                 worked={selectedDayData.worked}
                 goal={selectedDayData.goal}
@@ -389,15 +376,15 @@ export default function Dashboard() {
                 isOvertime={selectedDayData.isOvertime}
                 showGoal={true}
               />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
-                <button className="btn-register" onClick={startEditing} style={{ padding: '14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none' }}><Edit3 size={16} /> Editar</button>
-                <button className="btn-register" style={{ padding: '14px', fontSize: '0.9rem', background: 'transparent', border: '1px dashed var(--error)', color: 'var(--error)', boxShadow: 'none' }} onClick={() => { if (confirm("Remover registro?")) { fetcher.submit({ _action: "delete", date: selectedDateStr }, { method: "post" }); setIsModalOpen(false); } }}><Trash2 size={16} /> Excluir</button>
+              <div className="dashboard-modal-actions-grid-spaced">
+                <button className="btn-register btn-edit-glass" onClick={startEditing}><Edit3 size={16} /> Editar</button>
+                <button className="btn-register btn-delete-dashed" onClick={() => { if (confirm("Remover registro?")) { fetcher.submit({ _action: "delete", date: selectedDateStr }, { method: "post" }); setIsModalOpen(false); } }}><Trash2 size={16} /> Excluir</button>
               </div>
             </>
           ) : (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Sem registros.</p>
-              <button className="btn-register" onClick={startEditing} style={{ padding: '12px', fontSize: '0.9rem', width: 'auto', display: 'inline-flex', alignItems: 'center', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid var(--primary)', boxShadow: 'none' }}><Plus size={16} style={{ marginRight: '8px' }} /> Adicionar</button>
+            <div className="dashboard-modal-empty">
+              <p>Sem registros.</p>
+              <button className="btn-register btn-add-primary" onClick={startEditing}><Plus size={16} className="btn-icon-margin" /> Adicionar</button>
             </div>
           )}
         </div>

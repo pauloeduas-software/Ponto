@@ -18,11 +18,11 @@ import type { ShouldRevalidateFunction } from "react-router";
 import { minutesToHHMM } from "../utils/time";
 import { Modal } from "../components/Modal";
 import { CalendarGrid } from "../components/CalendarGrid";
-import { WeeklyScheduleList } from "../components/WeeklyScheduleList";
-import { MonthNavigator } from "../components/MonthNavigator";
-import { AvatarStack } from "../components/AvatarStack";
+import { CalendarVertical } from "../components/CalendarVertical";
+import { MonthSelector } from "../components/MonthSelector";
+import { AvatarGroup } from "../components/AvatarGroup";
 import { Avatar } from "../components/Avatar";
-import { DayDetails } from "../components/DayDetails";
+import { DayInfo } from "../components/DayInfo";
 import { db } from "../db.server";
 import "../styles/calendar.css";
 import "../styles/admin.css";
@@ -209,11 +209,11 @@ export default function Admin() {
         <div className="admin-header-new">
           <div className="header-row-1">
             <h1>Relatórios</h1>
-            <MonthNavigator currentDate={currentDate} onChangeMonth={changeMonth} />
+            <MonthSelector currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
 
           <div className="header-row-2">
-            <div className="toggles-group" style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+            <div className="toggles-group admin-header-actions">
               <div className="toggle-container-new">
                 <button
                   onClick={() => setCalendarView('grid')}
@@ -235,12 +235,12 @@ export default function Admin() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '24px' }}>
+        <div className="filters-wrapper-new">
           <div className="filters-grid-new">
             {(isAdmin || managerTeams.length > 0) && (
-              <div className="input-group" style={{ marginBottom: 0 }}>
+              <div className="input-group input-group-no-margin">
                 <div className="label-container">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <label className="label-icon-flex">
                     <Layers size={12} /> Filtrar Equipe
                   </label>
                 </div>
@@ -274,9 +274,9 @@ export default function Admin() {
               </div>
             )}
 
-            <div className="input-group" style={{ marginBottom: 0 }}>
+            <div className="input-group input-group-no-margin">
               <div className="label-container">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <label className="label-icon-flex">
                   <Filter size={12} /> Filtrar Colaborador
                 </label>
               </div>
@@ -293,7 +293,7 @@ export default function Admin() {
             </div>
           </div>
           {selectedUserId !== "todos" && selectedUserBalances && (
-            <div className="balance-mini-left" style={{ marginTop: '16px' }}>
+            <div className="balance-mini-left balance-left-spaced">
               <span className="label">Saldo do Mês:</span>
               <span className={`value ${selectedUserBalances.monthly >= 0 ? 'overtime' : 'missing'}`}>
                 {minutesToHHMM(Math.abs(selectedUserBalances.monthly))}
@@ -315,9 +315,10 @@ export default function Admin() {
                   {d.day}
                   {selectedUserId === "todos" ? (
                     recCount > 0 && (
-                      <AvatarStack
+                      <AvatarGroup
                         users={filteredEmployees.filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))}
-                        max={2}
+                        max={3}
+                        size={22}
                       />
                     )
                   ) : (
@@ -330,7 +331,7 @@ export default function Admin() {
             }}
           />
         ) : (
-          <WeeklyScheduleList
+          <CalendarVertical
             currentDate={currentDate}
             onDayClick={handleDayClick}
             renderRowContent={(wd) => {
@@ -342,10 +343,11 @@ export default function Admin() {
               return selectedUserId === "todos" ? (
                 dayGlobalRecords.length > 0 ? (
                   <div className="team-day-summary">
-                    <AvatarStack
+                    <AvatarGroup
                       users={dayGlobalRecords.map(r => r.emp)}
                       max={5}
-                      style={{ justifyContent: 'flex-start' }}
+                      size={24}
+                      className="avatar-stack-left-aligned"
                     />
                     <span className="summary-text">
                       {dayGlobalRecords.length} colaborador{dayGlobalRecords.length > 1 ? 'es' : ''} registrou{dayGlobalRecords.length > 1 ? 'am' : ''} ponto
@@ -417,75 +419,63 @@ export default function Admin() {
       >
         {selectedUserId === "todos" ? (
           selectedDayGlobalData && selectedDayGlobalData.length > 0 ? (
-            <div className="history-list" style={{ paddingRight: '4px' }}>
+            <div className="history-list admin-history-scroll">
               {selectedDayGlobalData.map(record => (
-                <div key={record.user.id} style={{
-                  padding: '16px',
-                  marginBottom: '12px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid var(--glass-border)',
-                  borderRadius: '16px'
-                }}>
+                <div key={record.user.id} className="admin-history-card">
                   {/* Cabeçalho do funcionário */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <Avatar src={record.user.avatarUrl} name={record.user.name} size={40} style={{ borderRadius: '10px', flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{record.user.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  <div className="admin-history-card-header">
+                    <Avatar
+                      src={record.user.avatarUrl}
+                      name={record.user.name}
+                      size={40}
+                      className="admin-history-avatar"
+                    />
+                    <div className="emp-details">
+                      <div className="emp-details-name">{record.user.name}</div>
+                      <div className="emp-details-sub">
                         {record.user.teamName || "Sem Equipe"}
                       </div>
                     </div>
                   </div>
 
                   {/* Batidas do dia */}
-                  <div style={{
-                    padding: '10px 12px',
-                    background: 'rgba(0,0,0,0.2)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: '10px',
-                    marginBottom: '10px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px'
-                  }}>
+                  <div className="admin-summary-punches">
                     {record.data.punches && record.data.punches.length > 0
                       ? Array.from({ length: Math.ceil((record.data.punches as string[]).length / 2) }).map((_, i) => (
-                        <div key={i} style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          borderBottom: i < Math.ceil((record.data.punches as string[]).length / 2) - 1
-                            ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                          paddingBottom: '6px'
-                        }}>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Entrada</span>
-                            <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{(record.data.punches as string[])[i * 2]}</span>
+                        <div
+                          key={i}
+                          className={`admin-summary-punch-row ${
+                            i < Math.ceil((record.data.punches as string[]).length / 2) - 1 ? "has-border" : ""
+                          }`}
+                        >
+                          <div className="admin-summary-col">
+                            <span className="admin-summary-meta">Entrada</span>
+                            <span className="admin-summary-time">{(record.data.punches as string[])[i * 2]}</span>
                           </div>
-                          <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>→</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                            <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Saída</span>
-                            <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{(record.data.punches as string[])[i * 2 + 1] || "--:--"}</span>
+                          <div className="admin-summary-arrow">→</div>
+                          <div className="admin-summary-col align-right">
+                            <span className="admin-summary-meta">Saída</span>
+                            <span className="admin-summary-time">{(record.data.punches as string[])[i * 2 + 1] || "--:--"}</span>
                           </div>
                         </div>
                       ))
-                      : <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sem batidas registradas.</span>
+                      : <span className="admin-summary-meta">Sem batidas registradas.</span>
                     }
                   </div>
 
                   {/* Totais */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                    <div className="info-box" style={{ padding: '10px' }}>
+                  <div className="admin-summary-stats-grid">
+                    <div className="info-box mini-info-box">
                       <span className="info-label">Meta</span>
-                      <span className="info-value" style={{ fontSize: '0.8rem' }}>{record.data.goal}</span>
+                      <span className="info-value mini-info-value">{record.data.goal}</span>
                     </div>
-                    <div className="info-box" style={{ padding: '10px' }}>
+                    <div className="info-box mini-info-box">
                       <span className="info-label">Trabalhado</span>
-                      <span className="info-value" style={{ fontSize: '0.8rem' }}>{record.data.worked}</span>
+                      <span className="info-value mini-info-value">{record.data.worked}</span>
                     </div>
-                    <div className="info-box" style={{ padding: '10px' }}>
+                    <div className="info-box mini-info-box">
                       <span className="info-label">Saldo</span>
-                      <span className={`info-value ${record.data.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.8rem' }}>
+                      <span className={`info-value mini-info-value ${record.data.isOvertime ? "overtime" : "missing"}`}>
                         {record.data.diff}
                       </span>
                     </div>
@@ -500,7 +490,7 @@ export default function Admin() {
           )
         ) : (
           selectedDayUserData ? (
-            <DayDetails
+            <DayInfo
               punches={selectedDayUserData.punches}
               worked={selectedDayUserData.worked}
               diff={selectedDayUserData.diff}

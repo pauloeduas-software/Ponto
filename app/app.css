@@ -488,6 +488,11 @@ input:focus {
   border: 1px solid var(--glass-border);
 }
 
+.stat-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }

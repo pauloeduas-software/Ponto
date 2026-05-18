@@ -10,3 +10,319 @@ select option {
   background: #0f172a;
   color: white;
 }
+
+/* Management Refactored CSS Classes */
+.management-header {
+  margin-bottom: 32px;
+}
+
+.btn-teams-action {
+  width: auto !important;
+  padding: 12px 20px !important;
+  background: var(--accent-gradient) !important;
+}
+
+.user-card-item {
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.user-card-profile-col {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-card-name-row {
+  font-weight: 700;
+  font-size: 1rem;
+  color: white;
+}
+
+.user-card-username {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.user-card-badge-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.badge-role-admin {
+  font-size: 0.65rem;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(168, 85, 247, 0.25);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.badge-role-user {
+  font-size: 0.65rem;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.badge-team-primary {
+  font-size: 0.65rem;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  font-weight: 600;
+}
+
+.badge-team-manager {
+  font-size: 0.65rem;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(139, 92, 246, 0.18);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  font-weight: 600;
+}
+
+.badge-team-employee {
+  font-size: 0.65rem;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.10);
+  color: var(--primary);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  font-weight: 600;
+}
+
+.badge-team-empty {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.btn-user-edit {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.modal-grid-gap-32 {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.modal-grid-gap-24 {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.modal-section-label-uppercase {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: block;
+}
+
+.modal-label-small-uppercase {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.modal-row-gap-8 {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-row-flex-center {
+  display: flex;
+  align-items: center;
+}
+
+.modal-row-spaced {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-input-large-btn {
+  width: auto !important;
+  padding: 0 25px !important;
+  height: 54px !important;
+  margin: 0 !important;
+  border-radius: 16px !important;
+}
+
+.modal-divider-top {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 24px;
+}
+
+.team-list-card-item {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-icon-red-transparent {
+  color: #ef4444 !important;
+  background: transparent !important;
+}
+
+.user-team-primary-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(168, 85, 247, 0.05);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 12px;
+}
+
+.user-team-primary-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-team-primary-text {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-team-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.user-team-link-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-team-link-select {
+  padding: 6px 10px !important;
+  font-size: 0.75rem !important;
+  border-radius: 8px !important;
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.select-team-add {
+  flex: 2;
+  padding: 10px 12px !important;
+  font-size: 0.85rem !important;
+  border-radius: 12px !important;
+}
+
+.select-role-add {
+  flex: 1;
+  padding: 10px 12px !important;
+  font-size: 0.85rem !important;
+  border-radius: 12px !important;
+}
+
+.btn-delete-user-glass {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-user-glass:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.modal-grid-gap-8 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-team-name {
+  margin: 0 !important;
+  height: 54px !important;
+}
+
+.team-list-name {
+  font-weight: 600;
+}
+
+.modal-team-list-container {
+  margin-bottom: 12px;
+}
+
+.icon-shield-purple {
+  color: #d8b4fe;
+}
+
+.form-no-margin {
+  margin: 0 !important;
+}
+
+.user-team-name-text {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.modal-empty-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.input-password-change {
+  flex: 1;
+  margin: 0 !important;
+}
+
+.btn-save-password {
+  width: auto !important;
+  padding: 0 20px !important;
+}
+
+
+

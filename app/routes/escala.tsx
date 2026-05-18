@@ -21,8 +21,8 @@ import { requireUserId, getUser } from "../session.server";
 import { type Shift } from "../types";
 import { Modal } from "../components/Modal";
 import { CalendarGrid } from "../components/CalendarGrid";
-import { MonthNavigator } from "../components/MonthNavigator";
-import { AvatarStack } from "../components/AvatarStack";
+import { MonthSelector } from "../components/MonthSelector";
+import { AvatarGroup } from "../components/AvatarGroup";
 import { Avatar } from "../components/Avatar";
 import "../styles/calendar.css";
 import "../styles/escala.css";
@@ -248,34 +248,23 @@ export default function Escala() {
         <div className="admin-header-new">
           <div className="header-row-1">
             <h1>Escala Mensal</h1>
-            <MonthNavigator currentDate={currentDate} onChangeMonth={changeMonth} />
+            <MonthSelector currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
         </div>
 
         {/* Badge de modo visualização: aparece quando não pode editar a equipe ativa */}
         {!isAdmin && !canEditActiveTeam && activeTeamId && (
-          <div style={{
-            padding: '8px 12px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid var(--glass-border)',
-            borderRadius: '10px',
-            fontSize: '0.8rem',
-            color: 'var(--text-muted)',
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
+          <div className="escala-info-badge">
             <XCircle size={14} /> Modo Visualização — você é funcionário desta equipe
           </div>
         )}
 
-        <div style={{ marginBottom: '24px' }}>
-          <div className="filters-grid-new" style={!(isAdmin || managerTeams.length > 0) ? { gridTemplateColumns: '1fr' } : {}}>
+        <div className="escala-filters-container">
+          <div className={`filters-grid-new ${!(isAdmin || managerTeams.length > 0) ? 'single-col' : ''}`}>
             {(isAdmin || managerTeams.length > 0) && (
-              <div className="input-group" style={{ marginBottom: 0 }}>
+              <div className="input-group input-group-no-margin">
                 <div className="label-container">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <label className="label-icon-flex">
                     <Layers size={12} /> Filtrar Equipe
                   </label>
                 </div>
@@ -309,9 +298,9 @@ export default function Escala() {
               </div>
             )}
             
-            <div className="input-group" style={{ marginBottom: 0 }}>
+            <div className="input-group input-group-no-margin">
               <div className="label-container">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <label className="label-icon-flex">
                   <Users size={12} /> Filtrar Colaborador
                 </label>
               </div>
@@ -346,9 +335,10 @@ export default function Escala() {
                 >
                   {d.day}
                   {count > 0 && (
-                    <AvatarStack
+                    <AvatarGroup
                       users={scheduledUsers}
                       max={3}
+                      size={22}
                     />
                   )}
                 </div>
@@ -358,18 +348,13 @@ export default function Escala() {
             const isScheduled = escala.find(s => s.userId === selectedUserId && s.date === d.dateStr);
             return (
               <div
-                className={`calendar-day ${isScheduled ? 'selected' : ''}`}
-                style={{
-                  background: isScheduled ? 'rgba(16, 185, 129, 0.15)' : '',
-                  borderColor: isScheduled ? 'var(--success)' : '',
-                  cursor: (isAdmin || canEditActiveTeam) ? 'pointer' : 'default'
-                }}
+                className={`calendar-day ${isScheduled ? 'selected scheduled' : ''} ${(isAdmin || canEditActiveTeam) ? 'editable-cursor' : 'default-cursor'}`}
               >
                 {d.day}
                 {isScheduled ? (
-                  <CheckCircle2 size={12} style={{ color: 'var(--success)', marginTop: '4px' }} />
+                  <CheckCircle2 size={12} className="escala-day-icon success" />
                 ) : (
-                  <XCircle size={10} style={{ color: 'rgba(255,255,255,0.1)', marginTop: '4px' }} />
+                  <XCircle size={10} className="escala-day-icon muted" />
                 )}
               </div>
             );
@@ -381,35 +366,26 @@ export default function Escala() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={new Date(selectedDateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-        icon={<CalendarIcon size={20} style={{ color: 'var(--primary)' }} />}
+        icon={<CalendarIcon size={20} color="var(--primary)" />}
         className="large"
       >
         <div className="history-list">
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Colaboradores escalados para este dia:</p>
+          <p className="escala-modal-subtitle">Colaboradores escalados para este dia:</p>
           {scheduledEmployeesOnSelectedDay.length > 0 ? (
             scheduledEmployeesOnSelectedDay.map(emp => (
-              <div key={emp.id} style={{
-                padding: '12px 16px',
-                marginBottom: '8px',
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid var(--glass-border)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
+              <div key={emp.id} className="escala-modal-employee-card">
                 <Avatar 
                   src={emp.avatarUrl} 
                   name={emp.name} 
                   size={44} 
-                  style={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }} 
+                  className="escala-modal-avatar"
                 />
-                <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{emp.name}</div>
+                <div className="escala-modal-employee-name">{emp.name}</div>
               </div>
             ))
           ) : (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <p style={{ color: 'var(--text-muted)' }}>Ninguém escalado.</p>
+            <div className="escala-modal-empty-box">
+              <p>Ninguém escalado.</p>
             </div>
           )}
         </div>

@@ -5,25 +5,27 @@ interface AvatarItem {
   name?: string;
 }
 
-interface AvatarStackProps {
+interface AvatarGroupProps {
   users: AvatarItem[];
   max?: number;
+  size?: number;
   style?: React.CSSProperties;
+  className?: string;
 }
 
-export function AvatarStack({ users, max = 3, style }: AvatarStackProps) {
+export function AvatarGroup({ users, max = 3, size = 18, style, className }: AvatarGroupProps) {
   const count = users.length;
   const visibleUsers = users.slice(0, max);
   const remaining = count - max;
 
   return (
-    <div className="scheduled-avatars-new" style={style}>
+    <div className={`scheduled-avatars-new ${className || ''}`} style={style}>
       {visibleUsers.map((u, idx) => (
         <Avatar
           key={idx}
           src={u.avatarUrl}
           name={u.name}
-          size={24}
+          size={size}
           className="avatar-mini-new"
         />
       ))}

@@ -1,11 +1,11 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-interface MonthNavigatorProps {
+interface MonthSelectorProps {
   currentDate: Date;
   onChangeMonth: (offset: number) => void;
 }
 
-export function MonthNavigator({ currentDate, onChangeMonth }: MonthNavigatorProps) {
+export function MonthSelector({ currentDate, onChangeMonth }: MonthSelectorProps) {
   return (
     <div className="month-nav-new">
       <button 

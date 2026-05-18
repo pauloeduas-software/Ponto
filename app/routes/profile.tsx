@@ -15,6 +15,7 @@ import { useLoaderData, useFetcher, Form, redirect } from "react-router";
 import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
 import { Avatar } from "../components/Avatar";
+import "../styles/profile.css";
 
 export async function loader({ request }: { request: Request }) {
   await requireUserId(request);
@@ -96,43 +97,18 @@ export default function Profile() {
           </div>
         </div>
 
-        <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+        <div className="profile-layout-container">
           {/* Seção de Informações do Usuário */}
-          <div style={{
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '24px', 
-            padding: '24px', 
-            background: 'rgba(255,255,255,0.03)', 
-            borderRadius: '24px',
-            border: '1px solid var(--glass-border)'
-          }}>
-            <div style={{ position: 'relative' }}>
+          <div className="profile-user-card">
+            <div className="profile-avatar-wrapper">
               <Avatar
                 src={avatarPreview}
                 name={(user as any).name}
                 size={110}
                 onClick={() => fileInputRef.current?.click()}
-                style={{
-                  borderRadius: '32px',
-                  border: '3px solid var(--glass-border)',
-                  boxShadow: '0 12px 24px rgba(0,0,0,0.3)'
-                }}
+                className="profile-avatar-img"
               />
-              <div style={{
-                position: 'absolute',
-                bottom: '-5px',
-                right: '-5px',
-                background: 'var(--primary)',
-                width: '28px',
-                height: '28px',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '3px solid #0f172a',
-                pointerEvents: 'none'
-              }}>
+              <div className="profile-avatar-camera-badge">
                 <Camera size={14} color="white" />
               </div>
               <input 
@@ -144,8 +120,8 @@ export default function Profile() {
               />
             </div>
 
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+            <div className="profile-details-col">
+              <div className="profile-name-input-wrapper">
                 <input 
                   type="text" 
                   defaultValue={(user as any).name}
@@ -154,51 +130,22 @@ export default function Profile() {
                       fetcher.submit({ action: "updateName", name: e.target.value }, { method: "post" });
                     }
                   }}
-                  style={{
-                    fontSize: '1.4rem',
-                    fontWeight: '700',
-                    background: 'transparent',
-                    border: 'none',
-                    padding: '0',
-                    color: 'white',
-                    width: '100%',
-                    outline: 'none',
-                    borderBottom: '1px solid transparent'
-                  }}
-                  onFocus={(e) => e.target.style.borderBottom = '1px solid var(--primary)'}
+                  className="profile-name-input"
                 />
               </div>
-              <p style={{color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '12px'}}>@{ (user as any).username }</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <div style={{
-                  padding: '4px 12px',
-                  background: (user as any).role === 'admin' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(167, 139, 250, 0.05)',
-                  borderRadius: '10px',
-                  fontSize: '0.75rem',
-                  fontWeight: '700',
-                  display: 'inline-block',
-                  textTransform: 'uppercase',
-                  color: (user as any).role === 'admin' ? '#d8b4fe' : '#a78bfa',
-                  letterSpacing: '0.5px',
-                  border: '1px solid ' + ((user as any).role === 'admin' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(167, 139, 250, 0.1)')
-                }}>
+              <p className="profile-username-text">@{ (user as any).username }</p>
+              <div className="profile-badges-row">
+                <div className={(user as any).role === 'admin' ? 'profile-badge-role-admin' : 'profile-badge-role-user'}>
                   {(user as any).role === 'admin' ? 'Admin' : 'Usuário'}
                 </div>
                 
                 {team && (
-                  <div style={{ 
-                    padding: '4px 12px', background: 'rgba(168, 85, 247, 0.05)', borderRadius: '10px', fontSize: '0.75rem', 
-                    fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.2)' 
-                  }}>
+                  <div className="profile-badge-team-primary">
                     <ShieldCheck size={14} /> {team.name} (Principal)
                   </div>
                 )}
                 {((user as any).userTeams || []).map((ut: any) => (
-                  <div key={ut.teamId} style={{ 
-                    padding: '4px 12px', background: ut.role === 'manager' ? 'rgba(139, 92, 246, 0.05)' : 'rgba(99, 102, 241, 0.05)', 
-                    borderRadius: '10px', fontSize: '0.75rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px', 
-                    color: ut.role === 'manager' ? '#c4b5fd' : 'var(--primary)', border: ut.role === 'manager' ? '1px solid rgba(139, 92, 246, 0.2)' : '1px solid rgba(99, 102, 241, 0.2)' 
-                  }}>
+                  <div key={ut.teamId} className={ut.role === 'manager' ? 'profile-badge-team-manager' : 'profile-badge-team-employee'}>
                     <Layers size={14} /> {ut.teamName} {ut.role === 'manager' ? '· Ger.' : ''}
                   </div>
                 ))}
@@ -208,24 +155,12 @@ export default function Profile() {
 
           {/* Seção de Gestão (Apenas Admin) */}
           {user.role === 'admin' && (
-            <div style={{
-              padding: '20px',
-              background: 'rgba(99, 102, 241, 0.05)',
-              borderRadius: '20px',
-              border: '1px solid rgba(99, 102, 241, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
+            <div className="profile-admin-banner">
               <div>
-                <h3 style={{ fontSize: '1rem', fontWeight: '700', color: 'white' }}>Administração</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Gerenciar equipes, cargos e acessos.</p>
+                <h3 className="profile-admin-banner-title">Administração</h3>
+                <p className="profile-admin-banner-desc">Gerenciar equipes, cargos e acessos.</p>
               </div>
-              <a href="/gestao" style={{ 
-                padding: '10px 16px', background: 'var(--primary)', 
-                color: 'white', borderRadius: '12px', fontSize: '0.85rem', 
-                fontWeight: '700', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px'
-              }}>
+              <a href="/gestao" className="profile-admin-banner-link">
                 Painel de Gestão <ChevronRight size={16} />
               </a>
             </div>
@@ -233,15 +168,10 @@ export default function Profile() {
 
 
           {/* Seção de Sair */}
-          <div style={{marginTop: '12px'}}>
+          <div className="profile-logout-wrapper">
             <Form action="/logout" method="post">
-              <button className="btn-register" style={{
-                background: 'rgba(99, 102, 241, 0.05)',
-                border: '1px solid rgba(99, 102, 241, 0.1)',
-                color: 'var(--text-muted)',
-                boxShadow: 'none'
-              }}>
-                <LogOut size={20} style={{marginRight: '10px'}} /> Sair da Conta
+              <button className="btn-register btn-profile-logout">
+                <LogOut size={20} /> Sair da Conta
               </button>
             </Form>
           </div>
