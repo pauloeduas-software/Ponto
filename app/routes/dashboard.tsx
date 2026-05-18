@@ -25,28 +25,13 @@ import { MonthSelector } from "../components/MonthSelector";
 import { DayInfo } from "../components/DayInfo";
 import "../styles/calendar.css";
 import "../styles/dashboard.css";
-import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
+import { getDashboardHistory, savePunchRecord, deletePunchRecord } from "../services/dashboardService.server";
 
 export async function loader({ request }: { request: Request }) {
   const userId = await requireUserId(request);
   const user = await getUser(request);
-
-  const records = db.prepare("SELECT * FROM PunchRecord WHERE userId = ? ORDER BY date DESC").all(userId) as any[];
-
-  const history: SavedDay[] = records.map(r => ({
-    date: r.date,
-    punches: JSON.parse(r.punches),
-    workMins: r.workMins,
-    diffMins: r.diffMins,
-    goalMins: r.goalMins || 480,
-    goal: minutesToHHMM(r.goalMins || 480),
-    isOvertime: r.isOvertime === 1,
-    worked: minutesToHHMM(r.workMins),
-    diff: minutesToHHMM(Math.abs(r.diffMins))
-  }));
-
-  return { user, history };
+  return { user, history: getDashboardHistory(userId) };
 }
 
 export async function action({ request }: { request: Request }) {
@@ -59,28 +44,20 @@ export async function action({ request }: { request: Request }) {
   const date = formData.get("date") as string;
 
   if (actionType === "delete") {
-    db.prepare("DELETE FROM PunchRecord WHERE userId = ? AND date = ?").run(userId, date);
+    deletePunchRecord(userId, date);
     return { success: true };
   }
 
   if (actionType === "save") {
-    const punches = formData.get("punches") as string;
-    const workMins = parseInt(formData.get("workMins") as string);
-    const diffMins = parseInt(formData.get("diffMins") as string);
-    const isOvertime = formData.get("isOvertime") === "true" ? 1 : 0;
-    const goal = formData.get("goal") as string;
-    const goalMins = timeToMinutes(goal);
-
-    const existing = db.prepare("SELECT id FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, date);
-    if (existing) {
-      db.prepare(
-        "UPDATE PunchRecord SET punches = ?, workMins = ?, diffMins = ?, isOvertime = ?, goalMins = ? WHERE userId = ? AND date = ?"
-      ).run(punches, workMins, diffMins, isOvertime, goalMins, userId, date);
-    } else {
-      db.prepare(
-        "INSERT INTO PunchRecord (id, userId, date, punches, workMins, diffMins, isOvertime, goalMins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-      ).run(crypto.randomUUID(), userId, date, punches, workMins, diffMins, isOvertime, goalMins);
-    }
+    savePunchRecord(
+      userId,
+      date,
+      formData.get("punches") as string,
+      parseInt(formData.get("workMins") as string),
+      parseInt(formData.get("diffMins") as string),
+      formData.get("isOvertime") === "true" ? 1 : 0,
+      formData.get("goal") as string
+    );
     return { success: true };
   }
 

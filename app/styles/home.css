@@ -1,24 +1,5 @@
-.admin-header-new {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.header-row-1 {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-h1 {
-  color: #fff;
-  font-size: 1.8rem;
-  margin: 0;
-}
+/* Estilos específicos da Tela Inicial (Home) */
 
-@media (max-width: 600px) {
-  h1 {
-    font-size: 1.4rem;
-  }
-}
 
 /* Home Refactored CSS Classes */
 .punches-section-wrapper {

@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
-import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
 import { type Shift } from "../types";
 import { Modal } from "../components/Modal";
@@ -26,6 +25,7 @@ import { AvatarGroup } from "../components/AvatarGroup";
 import { Avatar } from "../components/Avatar";
 import "../styles/calendar.css";
 import "../styles/escala.css";
+import { getEscalaData, saveShifts } from "../services/escalaService.server";
 
 // Só rebusca dados do servidor quando a própria action da escala for executada
 export const shouldRevalidate: ShouldRevalidateFunction = ({ formAction, defaultShouldRevalidate }) => {
@@ -37,87 +37,12 @@ export async function loader({ request }: { request: Request }) {
   await requireUserId(request);
   const user = await getUser(request) as any;
   const url = new URL(request.url);
-  const viewParam = url.searchParams.get("view") || "team";
   const selectedTeamParam = url.searchParams.get("teamFilter") || null;
-
-  // Admins e todos os membros de equipe podem ver a escala
-  const isAdmin = user.role === "admin";
-
-  // Apenas Administradores podem acessar a visão Global
-  const isTeamView = !isAdmin || viewParam === "team";
-
-  let employeesQuery = "SELECT id, name, role, avatarUrl, teamId FROM User";
-  let shiftsQuery = "SELECT * FROM Shift";
-  let params: any[] = [];
-  let teamName = "Geral";
-
-  // Vínculos do usuário logado (todas as equipes)
-  const userTeams = (user.userTeams || []) as any[];
-  const managerTeams = userTeams.filter((ut: any) => ut.role === 'manager');
-
-  // Equipe ativa selecionada para não-admins
-  const activeTeamId = selectedTeamParam || userTeams[0]?.teamId || user.teamId || null;
-  // Role do usuário na equipe ativa
-  const activeTeamRole = userTeams.find((ut: any) => ut.teamId === activeTeamId)?.role || null;
-  // Se o usuário pode editar a equipe ativa (admin sempre pode, manager também)
-  const canEditActiveTeam = isAdmin || activeTeamRole === 'manager';
-
-  if (isAdmin) {
-    // Admin global: sem filtro, sempre traz todos
-  } else if (activeTeamId) {
-    // Visão de equipe (Manager, employee ou Admin com equipe selecionada)
-    employeesQuery = `
-      SELECT DISTINCT u.id, u.name, u.role, u.avatarUrl, u.teamId
-      FROM User u
-      LEFT JOIN UserTeam ut ON u.id = ut.userId
-      WHERE ut.teamId = ? OR u.teamId = ?
-    `;
-    shiftsQuery = `
-      SELECT DISTINCT s.* FROM Shift s
-      JOIN User u ON s.userId = u.id
-      LEFT JOIN UserTeam ut ON s.userId = ut.userId
-      WHERE ut.teamId = ? OR u.teamId = ?
-    `;
-    params = [activeTeamId, activeTeamId];
-    const team = db.prepare("SELECT name FROM Team WHERE id = ?").get(activeTeamId) as any;
-    teamName = team?.name || "Equipe";
-  } else {
-    // Sem equipe: vê apenas a si mesmo
-    employeesQuery += " WHERE id = ?";
-    shiftsQuery = "SELECT * FROM Shift WHERE userId = ?";
-    params = [user.id];
-  }
-
-  const employees = db.prepare(employeesQuery).all(...params) as any[];
-
-  // Attach userTeams
-  const allUserTeams = db.prepare(`
-    SELECT ut.userId, ut.teamId, ut.role, t.name as teamName
-    FROM UserTeam ut
-    JOIN Team t ON ut.teamId = t.id
-  `).all() as any[];
-  
-  const userTeamsMap: Record<string, any[]> = {};
-  for (const link of allUserTeams) {
-    if (!userTeamsMap[link.userId]) userTeamsMap[link.userId] = [];
-    userTeamsMap[link.userId].push(link);
-  }
-
-  employees.forEach(emp => {
-    emp.userTeams = userTeamsMap[emp.id] || [];
-  });
-
-  const shifts = db.prepare(shiftsQuery).all(...params) as any[];
-  const teams = db.prepare("SELECT * FROM Team ORDER BY name").all() as any[];
-
-  return {
-    user, employees, initialShifts: shifts, teamName, teams,
-    userTeams, managerTeams, isAdmin, activeTeamId, canEditActiveTeam
-  };
+  return getEscalaData(user, selectedTeamParam);
 }
 
 export async function action({ request }: { request: Request }) {
-  const userId = await requireUserId(request);
+  await requireUserId(request);
   const user = await getUser(request) as any;
 
   const formData = await request.formData();
@@ -125,37 +50,8 @@ export async function action({ request }: { request: Request }) {
   const targetUserId = formData.get("userId") as string;
 
   if (actionType === "save") {
-    // Verifica se o usuário pode editar: admin, ou manager na equipe do target
-    const isAdmin = user?.role === 'admin';
-    let canEdit = isAdmin;
-
-    if (!isAdmin && targetUserId) {
-      // Busca as equipes em comum entre o executor e o target, onde o executor é manager
-      const sharedManagerTeam = db.prepare(`
-        SELECT ut1.teamId FROM UserTeam ut1
-        JOIN UserTeam ut2 ON ut1.teamId = ut2.teamId
-        WHERE ut1.userId = ? AND ut1.role = 'manager'
-        AND ut2.userId = ?
-        LIMIT 1
-      `).get(user.id, targetUserId);
-      canEdit = !!sharedManagerTeam;
-    }
-
-    if (!canEdit) {
-      return { error: "Acesso negado." };
-    }
-
-    const shiftsJson = formData.get("shifts") as string;
-    const shifts = JSON.parse(shiftsJson) as Shift[];
-
-    db.prepare("DELETE FROM Shift WHERE userId = ?").run(targetUserId);
-
-    const insert = db.prepare("INSERT INTO Shift (id, userId, date, startTime, endTime, type) VALUES (?, ?, ?, ?, ?, ?)");
-    for (const s of shifts) {
-      insert.run(crypto.randomUUID(), s.userId, s.date, s.startTime, s.endTime, s.type);
-    }
-
-    return { success: true };
+    const shifts = JSON.parse(formData.get("shifts") as string) as Shift[];
+    return saveShifts(user, targetUserId, shifts);
   }
 
   return null;

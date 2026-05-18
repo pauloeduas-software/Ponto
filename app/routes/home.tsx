@@ -228,22 +228,22 @@ export default function Home() {
 
           {showGoalInput && (
             <div className="home-goal-banner">
-              <div>
+              <div className="home-goal-banner-title-container">
                 <div className="home-goal-banner-title">Meta do Dia</div>
                 <div className="home-goal-banner-desc">Apenas para hoje</div>
               </div>
-               <div className="home-goal-input-container">
-                 <input 
-                   type="text"
-                   inputMode="numeric"
-                   value={dailyGoal}
-                   maxLength={5}
-                   onChange={(e) => setDailyGoal(formatTimeInput(e.target.value))}
-                   className="home-goal-input"
-                 />
-                 <Clock size={14} color="white" className="home-goal-input-icon" />
-               </div>
-             </div>
+              <div className="home-goal-input-container">
+                <input 
+                  type="text"
+                  inputMode="numeric"
+                  value={dailyGoal}
+                  maxLength={5}
+                  onChange={(e) => setDailyGoal(formatTimeInput(e.target.value))}
+                  className="home-goal-input"
+                />
+                <Clock size={14} color="white" className="home-goal-input-icon" />
+              </div>
+            </div>
           )}
 
           <div className="punches-grid-container">
