@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   Calculator, 
   RefreshCcw, 
@@ -35,6 +35,37 @@ export default function Simulador() {
   ];
 
   const [days, setDays] = useState<SimDay[]>(initialDays);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const userId = rootData?.user?.id || "guest";
+  const storageKey = `ponto_simulador_dados_${userId}`;
+
+  // Carrega do LocalStorage na montagem (apenas client-side) ou quando o usuário mudar
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        setDays(JSON.parse(saved));
+      } catch (e) {
+        console.error("Erro ao carregar dados salvos do simulador", e);
+      }
+    } else {
+      setDays(initialDays);
+    }
+    setIsLoaded(true);
+  }, [storageKey]);
+
+  // Salva no LocalStorage sempre que os dias mudarem (após o carregamento inicial)
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem(storageKey, JSON.stringify(days));
+    }
+  }, [days, isLoaded, storageKey]);
+
+  const handleReset = () => {
+    localStorage.removeItem(storageKey);
+    setDays(initialDays);
+  };
 
   const updateField = (id: string, field: keyof SimDay, value: string) => {
     const formatted = formatTimeInput(value);
@@ -86,7 +117,7 @@ export default function Simulador() {
             <h1>Simulador</h1>
           </div>
           <div className="header-actions">
-            <button className="icon-btn" onClick={() => setDays(initialDays)} title="Resetar"><RefreshCcw size={18} /></button>
+            <button className="icon-btn" onClick={handleReset} title="Resetar"><RefreshCcw size={18} /></button>
           </div>
         </div>
 
