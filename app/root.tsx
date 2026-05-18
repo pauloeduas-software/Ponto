@@ -21,6 +21,7 @@ import {
   User as UserIcon
 } from "lucide-react";
 import { getUser } from "./session.server";
+import { Avatar } from "./components/Avatar";
 
 export async function loader({ request }: { request: Request }) {
   const user = await getUser(request);
@@ -83,15 +84,7 @@ function Sidebar({ user }: { user: any }) {
       </Link>
 
       <Link to="/perfil" prefetch="intent" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
-        {user?.avatarUrl ? (
-          <img
-            src={user.avatarUrl}
-            alt="Perfil"
-            style={{ width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover' }}
-          />
-        ) : (
-          <UserIcon size={24} />
-        )}
+        <Avatar src={user?.avatarUrl} name={user?.name} size={28} style={{ borderRadius: '8px' }} />
       </Link>
     </aside>
   );

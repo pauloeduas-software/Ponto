@@ -836,3 +836,56 @@ input:focus {
   to { transform: rotate(360deg); }
 }
 
+/* DayDetails Component Styles */
+.day-details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.day-details-punches {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.day-details-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.day-details-row:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.day-details-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.day-details-col.align-right {
+  align-items: flex-end;
+}
+
+.day-details-meta {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.day-details-value {
+  font-weight: 700;
+}
+
+.day-details-arrow {
+  color: var(--text-muted);
+}
+
+.day-details-empty {
+  text-align: center;
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+

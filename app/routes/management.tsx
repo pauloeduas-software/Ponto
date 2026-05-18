@@ -16,6 +16,7 @@ import { useLoaderData, useFetcher } from "react-router";
 import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
 import { Modal } from "../components/Modal";
+import { Avatar } from "../components/Avatar";
 import type { User } from "../types";
 import "../styles/management.css";
 
@@ -177,9 +178,7 @@ export default function Management() {
           {users.map(u => (
             <div key={u.id} style={{ padding: '16px 20px', marginBottom: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', color: 'white' }}>
-                  {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '14px' }} /> : u.name?.[0]}
-                </div>
+                <Avatar src={u.avatarUrl} name={u.name} size={48} />
                 <div>
                   <div style={{ fontWeight: '700', fontSize: '1rem', color: 'white' }}>{u.name} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '400', marginLeft: '4px' }}>@{u.username}</span></div>
                   <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center', flexWrap: 'wrap' }}>

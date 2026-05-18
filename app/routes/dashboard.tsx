@@ -22,6 +22,7 @@ import { StatCard } from "../components/StatCard";
 import { CalendarGrid } from "../components/CalendarGrid";
 import { WeeklyScheduleList } from "../components/WeeklyScheduleList";
 import { MonthNavigator } from "../components/MonthNavigator";
+import { DayDetails } from "../components/DayDetails";
 import "../styles/calendar.css";
 import "../styles/dashboard.css";
 import { db } from "../db.server";
@@ -380,22 +381,14 @@ export default function Dashboard() {
             </div>
           ) : selectedDayData ? (
             <>
-              <div className="info-box" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--glass-border)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {selectedDayData.punches && selectedDayData.punches.length > 0 ? Array.from({ length: Math.ceil(selectedDayData.punches.length / 2) }).map((_, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: i < Math.ceil((selectedDayData.punches?.length || 0) / 2) - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: '8px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Entrada</span><span style={{ fontWeight: '700' }}>{selectedDayData.punches?.[i * 2]}</span></div>
-                      <div style={{ color: 'var(--text-muted)' }}>→</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}><span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Saída</span><span style={{ fontWeight: '700' }}>{selectedDayData.punches?.[i * 2 + 1] || "--:--"}</span></div>
-                    </div>
-                  )) : null}
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                <div className="info-box" style={{ background: 'rgba(255,255,255,0.05)' }}><span className="info-label"><Clock size={12} /> Meta</span><span className="info-value" style={{ fontSize: '0.9rem' }}>{selectedDayData.goal}</span></div>
-                <div className="info-box"><span className="info-label"><Timer size={12} /> Trabalhado</span><span className="info-value" style={{ fontSize: '0.9rem' }}>{selectedDayData.worked}</span></div>
-                <div className="info-box"><span className="info-label">{selectedDayData.isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo</span><span className={`info-value ${selectedDayData.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.9rem' }}>{selectedDayData.diff}</span></div>
-              </div>
+              <DayDetails
+                punches={selectedDayData.punches}
+                worked={selectedDayData.worked}
+                goal={selectedDayData.goal}
+                diff={selectedDayData.diff}
+                isOvertime={selectedDayData.isOvertime}
+                showGoal={true}
+              />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
                 <button className="btn-register" onClick={startEditing} style={{ padding: '14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none' }}><Edit3 size={16} /> Editar</button>
                 <button className="btn-register" style={{ padding: '14px', fontSize: '0.9rem', background: 'transparent', border: '1px dashed var(--error)', color: 'var(--error)', boxShadow: 'none' }} onClick={() => { if (confirm("Remover registro?")) { fetcher.submit({ _action: "delete", date: selectedDateStr }, { method: "post" }); setIsModalOpen(false); } }}><Trash2 size={16} /> Excluir</button>

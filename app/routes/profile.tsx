@@ -14,6 +14,7 @@ import {
 import { useLoaderData, useFetcher, Form, redirect } from "react-router";
 import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
+import { Avatar } from "../components/Avatar";
 
 export async function loader({ request }: { request: Request }) {
   await requireUserId(request);
@@ -107,45 +108,32 @@ export default function Profile() {
             border: '1px solid var(--glass-border)'
           }}>
             <div style={{ position: 'relative' }}>
-              <div 
+              <Avatar
+                src={avatarPreview}
+                name={(user as any).name}
+                size={110}
                 onClick={() => fileInputRef.current?.click()}
                 style={{
-                  width: '110px', 
-                  height: '110px', 
-                  background: 'var(--accent-gradient)', 
                   borderRadius: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '2.5rem',
-                  fontWeight: '700',
-                  color: 'white',
-                  cursor: 'pointer',
-                  overflow: 'hidden',
                   border: '3px solid var(--glass-border)',
                   boxShadow: '0 12px 24px rgba(0,0,0,0.3)'
                 }}
-              >
-                {avatarPreview ? (
-                  <img src={avatarPreview} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  (user as any).name?.[0]?.toUpperCase()
-                )}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '-5px',
-                  right: '-5px',
-                  background: 'var(--primary)',
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '3px solid #0f172a'
-                }}>
-                  <Camera size={14} color="white" />
-                </div>
+              />
+              <div style={{
+                position: 'absolute',
+                bottom: '-5px',
+                right: '-5px',
+                background: 'var(--primary)',
+                width: '28px',
+                height: '28px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '3px solid #0f172a',
+                pointerEvents: 'none'
+              }}>
+                <Camera size={14} color="white" />
               </div>
               <input 
                 type="file" 

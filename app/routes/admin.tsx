@@ -21,6 +21,8 @@ import { CalendarGrid } from "../components/CalendarGrid";
 import { WeeklyScheduleList } from "../components/WeeklyScheduleList";
 import { MonthNavigator } from "../components/MonthNavigator";
 import { AvatarStack } from "../components/AvatarStack";
+import { Avatar } from "../components/Avatar";
+import { DayDetails } from "../components/DayDetails";
 import { db } from "../db.server";
 import "../styles/calendar.css";
 import "../styles/admin.css";
@@ -426,16 +428,7 @@ export default function Admin() {
                 }}>
                   {/* Cabeçalho do funcionário */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <div style={{
-                      width: '40px', height: '40px', borderRadius: '10px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'var(--primary)', overflow: 'hidden', flexShrink: 0
-                    }}>
-                      {record.user.avatarUrl
-                        ? <img src={record.user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <UserIcon color="white" size={18} />
-                      }
-                    </div>
+                    <Avatar src={record.user.avatarUrl} name={record.user.name} size={40} style={{ borderRadius: '10px', flexShrink: 0 }} />
                     <div>
                       <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{record.user.name}</div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -507,52 +500,13 @@ export default function Admin() {
           )
         ) : (
           selectedDayUserData ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Batidas do usuário selecionado */}
-              <div className="info-box" style={{ padding: '16px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {selectedDayUserData.punches && selectedDayUserData.punches.length > 0
-                    ? Array.from({ length: Math.ceil(selectedDayUserData.punches.length / 2) }).map((_, i) => (
-                      <div key={i} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderBottom: i < Math.ceil((selectedDayUserData.punches as string[]).length / 2) - 1
-                          ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                        paddingBottom: '8px'
-                      }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Entrada</span>
-                          <span style={{ fontWeight: '700' }}>{(selectedDayUserData.punches as string[])[i * 2]}</span>
-                        </div>
-                        <div style={{ color: 'var(--text-muted)' }}>→</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Saída</span>
-                          <span style={{ fontWeight: '700' }}>{(selectedDayUserData.punches as string[])[i * 2 + 1] || "--:--"}</span>
-                        </div>
-                      </div>
-                    ))
-                    : <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sem batidas.</span>
-                  }
-                </div>
-              </div>
-
-              {/* Totais */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="info-box">
-                  <span className="info-label"><Timer size={12} /> Trabalhado</span>
-                  <span className="info-value">{selectedDayUserData.worked}</span>
-                </div>
-                <div className="info-box">
-                  <span className="info-label">
-                    {selectedDayUserData.isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo
-                  </span>
-                  <span className={`info-value ${selectedDayUserData.isOvertime ? "overtime" : "missing"}`}>
-                    {selectedDayUserData.diff}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <DayDetails
+              punches={selectedDayUserData.punches}
+              worked={selectedDayUserData.worked}
+              diff={selectedDayUserData.diff}
+              isOvertime={selectedDayUserData.isOvertime}
+              showGoal={false}
+            />
           ) : (
             <p style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
               Sem registros.
@@ -581,12 +535,7 @@ export default function Admin() {
               }}
             >
               <div className="emp-info">
-                <div className="emp-avatar">
-                  {emp.avatarUrl
-                    ? <img src={emp.avatarUrl} alt="" />
-                    : <UserIcon size={18} color="white" />
-                  }
-                </div>
+                <Avatar src={emp.avatarUrl} name={emp.name} size={36} className="emp-avatar" />
                 <div>
                   <div className="emp-name">{emp.name}</div>
                   <div className="emp-team">{emp.teamName || "Sem Equipe"}</div>

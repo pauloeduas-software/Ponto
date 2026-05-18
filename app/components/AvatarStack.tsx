@@ -1,4 +1,4 @@
-import { User as UserIcon } from "lucide-react";
+import { Avatar } from "./Avatar";
 
 interface AvatarItem {
   avatarUrl?: string | null;
@@ -19,13 +19,13 @@ export function AvatarStack({ users, max = 3, style }: AvatarStackProps) {
   return (
     <div className="scheduled-avatars-new" style={style}>
       {visibleUsers.map((u, idx) => (
-        <div key={idx} className="avatar-mini-new" title={u.name}>
-          {u.avatarUrl ? (
-            <img src={u.avatarUrl} alt={u.name || ""} />
-          ) : (
-            <UserIcon size={12} color="white" />
-          )}
-        </div>
+        <Avatar
+          key={idx}
+          src={u.avatarUrl}
+          name={u.name}
+          size={24}
+          className="avatar-mini-new"
+        />
       ))}
       {remaining > 0 && (
         <div className="avatar-more-new">

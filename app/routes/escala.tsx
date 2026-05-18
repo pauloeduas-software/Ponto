@@ -23,6 +23,7 @@ import { Modal } from "../components/Modal";
 import { CalendarGrid } from "../components/CalendarGrid";
 import { MonthNavigator } from "../components/MonthNavigator";
 import { AvatarStack } from "../components/AvatarStack";
+import { Avatar } from "../components/Avatar";
 import "../styles/calendar.css";
 import "../styles/escala.css";
 
@@ -397,23 +398,12 @@ export default function Escala() {
                 alignItems: 'center',
                 gap: '12px'
               }}>
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'var(--primary)',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(255,255,255,0.1)'
-                }}>
-                  {emp.avatarUrl ? (
-                    <img src={emp.avatarUrl} alt={emp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <UserIcon color="white" size={20} />
-                  )}
-                </div>
+                <Avatar 
+                  src={emp.avatarUrl} 
+                  name={emp.name} 
+                  size={44} 
+                  style={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }} 
+                />
                 <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{emp.name}</div>
               </div>
             ))
