@@ -22,6 +22,7 @@ import { type Shift } from "../types";
 import { Modal } from "../components/Modal";
 import { CalendarGrid } from "../components/CalendarGrid";
 import { MonthNavigator } from "../components/MonthNavigator";
+import { AvatarStack } from "../components/AvatarStack";
 import "../styles/calendar.css";
 import "../styles/escala.css";
 
@@ -344,18 +345,10 @@ export default function Escala() {
                 >
                   {d.day}
                   {count > 0 && (
-                    <div className="scheduled-avatars-new">
-                      {scheduledUsers.slice(0, 3).map((u, idx) => (
-                        <div key={idx} className="avatar-mini-new">
-                          {u.avatarUrl ? (
-                            <img src={u.avatarUrl} alt="" />
-                          ) : (
-                            <UserIcon size={12} color="white" />
-                          )}
-                        </div>
-                      ))}
-                      {count > 3 && <div className="avatar-more-new">+{count - 3}</div>}
-                    </div>
+                    <AvatarStack
+                      users={scheduledUsers}
+                      max={3}
+                    />
                   )}
                 </div>
               );

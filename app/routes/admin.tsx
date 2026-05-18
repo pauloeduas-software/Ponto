@@ -20,6 +20,7 @@ import { Modal } from "../components/Modal";
 import { CalendarGrid } from "../components/CalendarGrid";
 import { WeeklyScheduleList } from "../components/WeeklyScheduleList";
 import { MonthNavigator } from "../components/MonthNavigator";
+import { AvatarStack } from "../components/AvatarStack";
 import { db } from "../db.server";
 import "../styles/calendar.css";
 import "../styles/admin.css";
@@ -312,25 +313,10 @@ export default function Admin() {
                   {d.day}
                   {selectedUserId === "todos" ? (
                     recCount > 0 && (
-                      <div className="scheduled-avatars-new">
-                        {filteredEmployees
-                          .filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))
-                          .slice(0, 2)
-                          .map((emp, idx) => (
-                            <div key={idx} className="avatar-mini-new">
-                              {emp.avatarUrl ? (
-                                <img src={emp.avatarUrl} alt="" />
-                              ) : (
-                                <UserIcon size={10} color="white" />
-                              )}
-                            </div>
-                          ))}
-                        {recCount > 2 && (
-                          <div className="avatar-more-new">
-                            +{recCount - 2}
-                          </div>
-                        )}
-                      </div>
+                      <AvatarStack
+                        users={filteredEmployees.filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))}
+                        max={2}
+                      />
                     )
                   ) : (
                     (historyData[selectedUserId] || []).some(h => h.date === d.dateStr) && (
@@ -354,20 +340,11 @@ export default function Admin() {
               return selectedUserId === "todos" ? (
                 dayGlobalRecords.length > 0 ? (
                   <div className="team-day-summary">
-                    <div className="scheduled-avatars-new" style={{ justifyContent: 'flex-start' }}>
-                      {dayGlobalRecords.slice(0, 5).map((r, idx) => (
-                        <div key={idx} className="avatar-mini-new" title={r.emp.name}>
-                          {r.emp.avatarUrl ? (
-                            <img src={r.emp.avatarUrl} alt="" />
-                          ) : (
-                            <UserIcon size={10} color="white" />
-                          )}
-                        </div>
-                      ))}
-                      {dayGlobalRecords.length > 5 && (
-                        <div className="avatar-more-new">+{dayGlobalRecords.length - 5}</div>
-                      )}
-                    </div>
+                    <AvatarStack
+                      users={dayGlobalRecords.map(r => r.emp)}
+                      max={5}
+                      style={{ justifyContent: 'flex-start' }}
+                    />
                     <span className="summary-text">
                       {dayGlobalRecords.length} colaborador{dayGlobalRecords.length > 1 ? 'es' : ''} registrou{dayGlobalRecords.length > 1 ? 'am' : ''} ponto
                     </span>
