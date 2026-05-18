@@ -7,7 +7,8 @@ import {
   Settings
 } from "lucide-react";
 import { useLoaderData, useFetcher, useRevalidator } from "react-router";
-import { timeToMinutes, minutesToTime, minutesToHHMM } from "../utils/time";
+import { timeToMinutes, minutesToTime, minutesToHHMM, formatTimeInput } from "../utils/time";
+import "../styles/home.css";
 import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
 
@@ -257,13 +258,7 @@ export default function Home() {
                    inputMode="numeric"
                    value={dailyGoal}
                    maxLength={5}
-                   onChange={(e) => {
-                     const digits = e.target.value.replace(/[^0-9]/g, "");
-                     let h = digits.slice(0, 2); let m = digits.slice(2, 4);
-                     if (h.length === 2 && parseInt(h) > 23) h = "23";
-                     if (m.length === 2 && parseInt(m) > 59) m = "59";
-                     setDailyGoal(digits.length > 2 ? h + ":" + m : h);
-                   }}
+                   onChange={(e) => setDailyGoal(formatTimeInput(e.target.value))}
                    style={{
                      width: '100px',
                      background: 'rgba(0,0,0,0.3)',
@@ -344,19 +339,7 @@ export default function Home() {
                         placeholder="HH:MM"
                         value={entryVal || ""}
                         maxLength={5}
-                        onChange={e => {
-                          const digits = e.target.value.replace(/[^0-9]/g, "");
-                          let h = digits.slice(0, 2);
-                          let m = digits.slice(2, 4);
-
-                          // Validação de horas (máx 23)
-                          if (h.length === 2 && parseInt(h) > 23) h = "23";
-                          // Validação de minutos (máx 59)
-                          if (m.length === 2 && parseInt(m) > 59) m = "59";
-
-                          const v = digits.length > 2 ? h + ":" + m : h;
-                          updatePunch(entryIdx, v);
-                        }}
+                        onChange={e => updatePunch(entryIdx, formatTimeInput(e.target.value))}
                         style={{ borderColor: isInvalid ? '#ff4444' : '', textAlign: 'center', letterSpacing: '2px' }}
                       />
                       {entryVal && (
@@ -376,17 +359,7 @@ export default function Home() {
                         placeholder="HH:MM"
                         value={exitVal || ""}
                         maxLength={5}
-                        onChange={e => {
-                          const digits = e.target.value.replace(/[^0-9]/g, "");
-                          let h = digits.slice(0, 2);
-                          let m = digits.slice(2, 4);
-
-                          if (h.length === 2 && parseInt(h) > 23) h = "23";
-                          if (m.length === 2 && parseInt(m) > 59) m = "59";
-
-                          const v = digits.length > 2 ? h + ":" + m : h;
-                          updatePunch(exitIdx, v);
-                        }}
+                        onChange={e => updatePunch(exitIdx, formatTimeInput(e.target.value))}
                         style={{ borderColor: isInvalid ? '#ff4444' : '', textAlign: 'center', letterSpacing: '2px' }}
                       />
                       {exitVal && (
@@ -444,30 +417,6 @@ export default function Home() {
           <div className="result-item"><span className="result-label">Saldo do Dia</span><span className={`result-value ${currentResults.isOvertime ? "overtime" : "missing"}`}>{currentResults.overtime}</span></div>
         </div>
       </div>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .admin-header-new {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        .header-row-1 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        h1 {
-          color: #fff;
-          font-size: 1.8rem;
-          margin: 0;
-        }
-
-        @media (max-width: 600px) {
-          h1 {
-            font-size: 1.4rem;
-          }
-        }
-      `}} />
     </div>
   );
 }

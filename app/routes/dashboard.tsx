@@ -16,10 +16,14 @@ import {
 } from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
 import { type SavedDay } from "../types";
-import { minutesToTime, timeToMinutes, minutesToHHMM } from "../utils/time";
-import { getDaysInMonth } from "../utils/calendar";
+import { minutesToTime, timeToMinutes, minutesToHHMM, formatTimeInput } from "../utils/time";
 import { Modal } from "../components/Modal";
 import { StatCard } from "../components/StatCard";
+import { CalendarGrid } from "../components/CalendarGrid";
+import { WeeklyScheduleList } from "../components/WeeklyScheduleList";
+import { MonthNavigator } from "../components/MonthNavigator";
+import "../styles/calendar.css";
+import "../styles/dashboard.css";
 import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
 
@@ -93,8 +97,6 @@ export default function Dashboard() {
   const [editPunches, setEditPunches] = useState<string[]>([]);
   const [editGoal, setEditGoal] = useState("08:00");
   const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
-
-  const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
 
   const monthStats = useMemo(() => {
     const monthStr = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -175,13 +177,7 @@ export default function Dashboard() {
         <div className="admin-header-new">
           <div className="header-row-1">
             <h1>Histórico de Ponto</h1>
-            <div className="month-nav-new">
-              <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-              <span className="month-label-new">
-                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-              </span>
-              <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
-            </div>
+            <MonthNavigator currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
 
           <div className="header-row-2" style={{ marginBottom: '-8px' }}>
@@ -208,75 +204,64 @@ export default function Dashboard() {
         </div>
 
         {calendarView === 'grid' ? (
-          <div className="calendar-grid">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-              <div key={d} className="weekday-label">{d}</div>
-            ))}
-            {daysInMonth.map((d, i) => {
-              if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
+          <CalendarGrid
+            currentDate={currentDate}
+            selectedDateStr={selectedDateStr}
+            isModalOpen={isModalOpen}
+            onDayClick={handleDayClick}
+            renderDay={(d, isSelected) => {
               const hasData = history.find(h => h.date === d.dateStr);
-              const isSelected = selectedDateStr === d.dateStr;
               const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
               const isToday = d.dateStr === today;
               return (
-                <div key={d.dateStr} className={`calendar-day ${isSelected && isModalOpen ? 'selected' : ''} ${isToday ? 'today' : ''}`} onClick={() => handleDayClick(d.dateStr)}>
+                <div className={`calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}>
                   {d.day}
                   {hasData && <div className={`day-indicator ${hasData.isOvertime ? 'positive' : 'negative'}`} />}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
         ) : (
-          <div className="weekly-schedule-container">
-            {daysInMonth.filter(d => d !== null).map((wd: any) => {
+          <WeeklyScheduleList
+            currentDate={currentDate}
+            onDayClick={handleDayClick}
+            renderRowContent={(wd) => {
               const hasData = history.find(h => h.date === wd.dateStr);
-              const dObj = new Date(wd.dateStr + 'T12:00:00');
-              const dayName = dObj.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
-
-              return (
-                <div key={wd.dateStr} className="schedule-day-row" onClick={() => handleDayClick(wd.dateStr)}>
-                  <div className="day-info-mini">
-                    <span className="day-num">{wd.day}</span>
-                    <span className="day-name">{dayName}</span>
-                  </div>
-                  
-                  <div className="punches-flow">
-                    {hasData ? (
-                      <div className="day-punches-wrapper">
-                        {hasData.punches?.map((punch, pIdx) => {
-                          if (pIdx % 2 !== 0) return null;
-                          const start = punch;
-                          const end = hasData.punches?.[pIdx + 1];
-                          
-                          return (
-                            <div key={pIdx} className="punch-card-mini">
-                              <div className="punch-item">
-                                <span className="p-label">Entrada</span>
-                                <span className="p-time">{start}</span>
-                              </div>
-                              <div className="punch-arrow">→</div>
-                              <div className="punch-item">
-                                <span className="p-label">Saída</span>
-                                <span className="p-time">{end || "--:--"}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
+              return hasData ? (
+                <div className="day-punches-wrapper">
+                  {hasData.punches?.map((punch, pIdx) => {
+                    if (pIdx % 2 !== 0) return null;
+                    const start = punch;
+                    const end = hasData.punches?.[pIdx + 1];
+                    
+                    return (
+                      <div key={pIdx} className="punch-card-mini">
+                        <div className="punch-item">
+                          <span className="p-label">Entrada</span>
+                          <span className="p-time">{start}</span>
+                        </div>
+                        <div className="punch-arrow">→</div>
+                        <div className="punch-item">
+                          <span className="p-label">Saída</span>
+                          <span className="p-time">{end || "--:--"}</span>
+                        </div>
                       </div>
-                    ) : (
-                      <span className="no-records-text">Sem registros</span>
-                    )}
-                  </div>
-
-                  {hasData && (
-                    <div className={`day-balance-tag ${hasData.isOvertime ? 'overtime' : 'missing'}`}>
-                      {hasData.diff}
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
+              ) : (
+                <span className="no-records-text">Sem registros</span>
               );
-            })}
-          </div>
+            }}
+            renderRowSide={(wd) => {
+              const hasData = history.find(h => h.date === wd.dateStr);
+              return hasData ? (
+                <div className={`day-balance-tag ${hasData.isOvertime ? 'overtime' : 'missing'}`}>
+                  {hasData.diff}
+                </div>
+              ) : null;
+            }}
+          />
         )}
       </div>
 
@@ -301,13 +286,7 @@ export default function Dashboard() {
                     inputMode="numeric"
                     value={editGoal}
                     maxLength={5}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/[^0-9]/g, "");
-                      let h = digits.slice(0, 2); let m = digits.slice(2, 4);
-                      if (h.length === 2 && parseInt(h) > 23) h = "23";
-                      if (m.length === 2 && parseInt(m) > 59) m = "59";
-                      setEditGoal(digits.length > 2 ? h + ":" + m : h);
-                    }}
+                    onChange={(e) => setEditGoal(formatTimeInput(e.target.value))}
                     style={{
                       width: '100px',
                       background: 'rgba(0,0,0,0.3)',
@@ -367,13 +346,7 @@ export default function Dashboard() {
                               placeholder="HH:MM"
                               value={sVal || ""}
                               maxLength={5}
-                              onChange={e => {
-                                const digits = e.target.value.replace(/[^0-9]/g, "");
-                                let h = digits.slice(0, 2); let m = digits.slice(2, 4);
-                                if (h.length === 2 && parseInt(h) > 23) h = "23";
-                                if (m.length === 2 && parseInt(m) > 59) m = "59";
-                                updatePunch(sIdx, digits.length > 2 ? h + ":" + m : h);
-                              }}
+                              onChange={e => updatePunch(sIdx, formatTimeInput(e.target.value))}
                               style={{ borderColor: isInv ? '#ff4444' : '', textAlign: 'center', fontSize: '0.9rem' }}
                             />
                             {sVal && <button onClick={() => updatePunch(sIdx, "")} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#f87171', borderRadius: '6px', width: '24px', height: '24px', cursor: 'pointer' }}>✕</button>}
@@ -389,13 +362,7 @@ export default function Dashboard() {
                               placeholder="HH:MM"
                               value={eVal || ""}
                               maxLength={5}
-                              onChange={e => {
-                                const digits = e.target.value.replace(/[^0-9]/g, "");
-                                let h = digits.slice(0, 2); let m = digits.slice(2, 4);
-                                if (h.length === 2 && parseInt(h) > 23) h = "23";
-                                if (m.length === 2 && parseInt(m) > 59) m = "59";
-                                updatePunch(eIdx, digits.length > 2 ? h + ":" + m : h);
-                              }}
+                              onChange={e => updatePunch(eIdx, formatTimeInput(e.target.value))}
                               style={{ borderColor: isInv ? '#ff4444' : '', textAlign: 'center', fontSize: '0.9rem' }}
                             />
                             {eVal && <button onClick={() => updatePunch(eIdx, "")} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#f87171', borderRadius: '6px', width: '24px', height: '24px', cursor: 'pointer' }}>✕</button>}
@@ -442,224 +409,6 @@ export default function Dashboard() {
           )}
         </div>
       </Modal>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .admin-header-new {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-        .header-row-1 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .header-row-2 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-        }
-        .month-nav-new {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .month-label-new {
-          font-weight: 700;
-          text-transform: capitalize;
-          min-width: 140px;
-          text-align: center;
-          font-size: 0.95rem;
-        }
-        .balance-mini-left {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 16px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          margin-top: 10px;
-        }
-        .balance-mini-left .label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          font-weight: 600;
-        }
-        .balance-mini-left .value {
-          font-size: 1rem;
-          font-weight: 800;
-        }
-
-        @media (max-width: 600px) {
-          .header-row-1 {
-            flex-direction: row;
-            justify-content: space-between;
-          }
-          .header-row-2 {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-          }
-          .month-label-new {
-            min-width: 110px;
-            font-size: 0.85rem;
-          }
-          h1 {
-            font-size: 1.4rem;
-          }
-        }
-
-        .toggle-container-new {
-          background: rgba(255, 255, 255, 0.03);
-          padding: 4px;
-          border-radius: 12px;
-          display: flex;
-          gap: 4px;
-          border: 1px solid var(--glass-border);
-        }
-        .view-toggle-new {
-          padding: 6px 14px;
-          border-radius: 9px;
-          font-size: 0.7rem;
-          font-weight: 700;
-          text-decoration: none;
-          color: var(--text-muted);
-          transition: all 0.2s;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-family: inherit;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex: 1;
-        }
-        .view-toggle-new.active {
-          background: var(--primary);
-          color: white;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-
-        /* List View Styles */
-        .weekly-schedule-container {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-top: 10px;
-        }
-        .schedule-day-row {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 20px;
-          padding: 16px;
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .schedule-day-row:hover {
-          background: rgba(255, 255, 255, 0.06);
-          transform: translateX(4px);
-        }
-        .day-info-mini {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          min-width: 50px;
-          padding-right: 20px;
-          border-right: 1px solid var(--glass-border);
-        }
-        .day-num {
-          font-size: 1.4rem;
-          font-weight: 800;
-          line-height: 1;
-        }
-        .day-name {
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          color: var(--text-muted);
-          font-weight: 700;
-        }
-        .punches-flow {
-          flex: 1;
-          display: flex;
-          gap: 12px;
-          overflow-x: auto;
-          padding-bottom: 4px;
-        }
-        .day-punches-wrapper {
-          display: flex;
-          gap: 12px;
-        }
-        .punch-card-mini {
-          background: rgba(0, 0, 0, 0.2);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          padding: 8px 16px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-width: fit-content;
-        }
-        .punch-item {
-          display: flex;
-          flex-direction: column;
-        }
-        .p-label {
-          font-size: 0.55rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-        }
-        .p-time {
-          font-size: 0.9rem;
-          font-weight: 700;
-        }
-        .punch-arrow {
-          color: var(--text-muted);
-          font-size: 0.8rem;
-          opacity: 0.5;
-        }
-        .day-balance-tag {
-          padding: 6px 12px;
-          border-radius: 10px;
-          font-size: 0.8rem;
-          font-weight: 800;
-          min-width: 70px;
-          text-align: center;
-        }
-        .no-records-text {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-          font-style: italic;
-        }
-
-        @media (max-width: 600px) {
-          .schedule-day-row {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-          }
-          .day-info-mini {
-            flex-direction: row;
-            justify-content: space-between;
-            border-right: none;
-            border-bottom: 1px solid var(--glass-border);
-            padding-right: 0;
-            padding-bottom: 8px;
-          }
-          .day-num { font-size: 1.1rem; }
-          .punches-flow {
-            flex-wrap: wrap;
-          }
-          .day-balance-tag {
-            align-self: flex-end;
-          }
-        }
-      `}} />
     </div>
   );
 }

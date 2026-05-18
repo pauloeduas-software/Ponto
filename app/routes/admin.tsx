@@ -16,9 +16,13 @@ import {
 import { useLoaderData } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
 import { minutesToHHMM } from "../utils/time";
-import { getDaysInMonth } from "../utils/calendar";
 import { Modal } from "../components/Modal";
+import { CalendarGrid } from "../components/CalendarGrid";
+import { WeeklyScheduleList } from "../components/WeeklyScheduleList";
+import { MonthNavigator } from "../components/MonthNavigator";
 import { db } from "../db.server";
+import "../styles/calendar.css";
+import "../styles/admin.css";
 import { requireUserId, getUser } from "../session.server";
 import { type SavedDay } from "../types";
 
@@ -139,8 +143,6 @@ export default function Admin() {
   const [isTeamBalanceModalOpen, setIsTeamBalanceModalOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
 
-  const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
-
   const changeMonth = (offset: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
   };
@@ -204,13 +206,7 @@ export default function Admin() {
         <div className="admin-header-new">
           <div className="header-row-1">
             <h1>Relatórios</h1>
-            <div className="month-nav-new">
-              <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-              <span className="month-label-new">
-                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-              </span>
-              <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
-            </div>
+            <MonthNavigator currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
 
           <div className="header-row-2">
@@ -304,60 +300,34 @@ export default function Admin() {
         </div>
 
         {calendarView === 'grid' ? (
-          <div className="calendar-grid">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-              <div key={d} className="weekday-label">{d}</div>
-            ))}
-            {daysInMonth.map((d, i) => {
-              if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
-              const isSelected = selectedDateStr === d.dateStr;
+          <CalendarGrid
+            currentDate={currentDate}
+            selectedDateStr={selectedDateStr}
+            isModalOpen={isModalOpen}
+            onDayClick={handleDayClick}
+            renderDay={(d, isSelected) => {
               const recCount = recordCount(d.dateStr);
-
               return (
-                <div
-                  key={d.dateStr}
-                  className={`calendar-day ${isSelected && isModalOpen ? 'selected' : ''}`}
-                  onClick={() => handleDayClick(d.dateStr)}
-                >
+                <div className={`calendar-day ${isSelected ? 'selected' : ''}`}>
                   {d.day}
                   {selectedUserId === "todos" ? (
-                    recordCount(d.dateStr) > 0 && (
-                      <div style={{
-                        display: 'flex',
-                        gap: '2px',
-                        marginTop: '4px',
-                        justifyContent: 'center',
-                        flexWrap: 'wrap'
-                      }}>
+                    recCount > 0 && (
+                      <div className="scheduled-avatars-new">
                         {filteredEmployees
                           .filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))
                           .slice(0, 2)
                           .map((emp, idx) => (
-                            <div key={idx} style={{
-                              width: '16px',
-                              height: '16px',
-                              borderRadius: '4px',
-                              background: 'var(--primary)',
-                              overflow: 'hidden',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              border: '1px solid #0f172a',
-                            }}>
-                              {emp.avatarUrl
-                                ? <img src={emp.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                : <UserIcon size={10} color="white" />
-                              }
+                            <div key={idx} className="avatar-mini-new">
+                              {emp.avatarUrl ? (
+                                <img src={emp.avatarUrl} alt="" />
+                              ) : (
+                                <UserIcon size={10} color="white" />
+                              )}
                             </div>
                           ))}
-                        {recordCount(d.dateStr) > 2 && (
-                          <div style={{
-                            fontSize: '0.55rem',
-                            color: 'var(--text-muted)',
-                            fontWeight: 'bold',
-                            lineHeight: '16px'
-                          }}>
-                            +{recordCount(d.dateStr) - 2}
+                        {recCount > 2 && (
+                          <div className="avatar-more-new">
+                            +{recCount - 2}
                           </div>
                         )}
                       </div>
@@ -369,97 +339,92 @@ export default function Admin() {
                   )}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
         ) : (
-          <div className="weekly-schedule-container">
-            {daysInMonth.filter(d => d !== null).map((wd: any) => {
-              // Buscar todos os registros do dia para a equipe filtrada
+          <WeeklyScheduleList
+            currentDate={currentDate}
+            onDayClick={handleDayClick}
+            renderRowContent={(wd) => {
               const dayGlobalRecords = filteredEmployees.map(emp => {
                 const record = (historyData[emp.id] || []).find(h => h.date === wd.dateStr);
                 return record ? { emp, record } : null;
               }).filter(r => r !== null) as { emp: any, record: SavedDay }[];
 
-              const dayBalance = selectedUserId === "todos"
-                ? 0
-                : (dayGlobalRecords.find(r => r.emp.id === selectedUserId)?.record.diffMins || 0);
+              return selectedUserId === "todos" ? (
+                dayGlobalRecords.length > 0 ? (
+                  <div className="team-day-summary">
+                    <div className="scheduled-avatars-new" style={{ justifyContent: 'flex-start' }}>
+                      {dayGlobalRecords.slice(0, 5).map((r, idx) => (
+                        <div key={idx} className="avatar-mini-new" title={r.emp.name}>
+                          {r.emp.avatarUrl ? (
+                            <img src={r.emp.avatarUrl} alt="" />
+                          ) : (
+                            <UserIcon size={10} color="white" />
+                          )}
+                        </div>
+                      ))}
+                      {dayGlobalRecords.length > 5 && (
+                        <div className="avatar-more-new">+{dayGlobalRecords.length - 5}</div>
+                      )}
+                    </div>
+                    <span className="summary-text">
+                      {dayGlobalRecords.length} colaborador{dayGlobalRecords.length > 1 ? 'es' : ''} registrou{dayGlobalRecords.length > 1 ? 'am' : ''} ponto
+                    </span>
+                  </div>
+                ) : (
+                  <span className="no-records-text">Sem registros</span>
+                )
+              ) : (
+                dayGlobalRecords.some(r => r.emp.id === selectedUserId) ? (
+                  dayGlobalRecords
+                    .filter(r => r.emp.id === selectedUserId)
+                    .map((r, idx) => (
+                      <div key={idx} className="day-punches-wrapper">
+                        {r.record.punches?.map((punch, pIdx) => {
+                          if (pIdx % 2 !== 0) return null;
+                          const start = punch;
+                          const end = r.record.punches?.[pIdx + 1];
 
-              const dObj = new Date(wd.dateStr + 'T12:00:00');
-              const dayName = dObj.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+                          return (
+                            <div key={pIdx} className="punch-card-mini">
+                              <div className="punch-item">
+                                <span className="p-label">Entrada</span>
+                                <span className="p-time">{start}</span>
+                              </div>
+                              <div className="punch-arrow">→</div>
+                              <div className="punch-item">
+                                <span className="p-label">Saída</span>
+                                <span className="p-time">{end || "--:--"}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))
+                ) : (
+                  <span className="no-records-text">Sem registros</span>
+                )
+              );
+            }}
+            renderRowSide={(wd) => {
+              if (selectedUserId === "todos") return null;
+              const dayGlobalRecords = filteredEmployees.map(emp => {
+                const record = (historyData[emp.id] || []).find(h => h.date === wd.dateStr);
+                return record ? { emp, record } : null;
+              }).filter(r => r !== null) as { emp: any, record: SavedDay }[];
+
+              const userRecord = dayGlobalRecords.find(r => r.emp.id === selectedUserId);
+              if (!userRecord) return null;
+              const dayBalance = userRecord.record.diffMins || 0;
 
               return (
-                <div key={wd.dateStr} className="schedule-day-row" onClick={() => handleDayClick(wd.dateStr)}>
-                  <div className="day-info-mini">
-                    <span className="day-num">{wd.day}</span>
-                    <span className="day-name">{dayName}</span>
-                  </div>
-
-                  <div className="punches-flow">
-                    {selectedUserId === "todos" ? (
-                      dayGlobalRecords.length > 0 ? (
-                        <div className="team-day-summary">
-                          <div className="scheduled-avatars-new" style={{ justifyContent: 'flex-start' }}>
-                            {dayGlobalRecords.slice(0, 5).map((r, idx) => (
-                              <div key={idx} className="avatar-mini-new" title={r.emp.name}>
-                                {r.emp.avatarUrl
-                                  ? <img src={r.emp.avatarUrl} alt="" />
-                                  : <UserIcon size={10} color="white" />
-                                }
-                              </div>
-                            ))}
-                            {dayGlobalRecords.length > 5 && (
-                              <div className="avatar-more-new">+{dayGlobalRecords.length - 5}</div>
-                            )}
-                          </div>
-                          <span className="summary-text">
-                            {dayGlobalRecords.length} colaborador{dayGlobalRecords.length > 1 ? 'es' : ''} registrou{dayGlobalRecords.length > 1 ? 'am' : ''} ponto
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="no-records-text">Sem registros</span>
-                      )
-                    ) : (
-                      dayGlobalRecords.some(r => r.emp.id === selectedUserId) ? (
-                        dayGlobalRecords
-                          .filter(r => r.emp.id === selectedUserId)
-                          .map((r, idx) => (
-                            <div key={idx} className="day-punches-wrapper">
-                              {r.record.punches?.map((punch, pIdx) => {
-                                if (pIdx % 2 !== 0) return null;
-                                const start = punch;
-                                const end = r.record.punches?.[pIdx + 1];
-
-                                return (
-                                  <div key={pIdx} className="punch-card-mini">
-                                    <div className="punch-item">
-                                      <span className="p-label">Entrada</span>
-                                      <span className="p-time">{start}</span>
-                                    </div>
-                                    <div className="punch-arrow">→</div>
-                                    <div className="punch-item">
-                                      <span className="p-label">Saída</span>
-                                      <span className="p-time">{end || "--:--"}</span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ))
-                      ) : (
-                        <span className="no-records-text">Sem registros</span>
-                      )
-                    )}
-                  </div>
-
-                  {selectedUserId !== "todos" && dayGlobalRecords.some(r => r.emp.id === selectedUserId) && (
-                    <div className={`day-balance-tag ${dayBalance >= 0 ? 'overtime' : 'missing'}`}>
-                      {minutesToHHMM(Math.abs(dayBalance))}
-                    </div>
-                  )}
+                <div className={`day-balance-tag ${dayBalance >= 0 ? 'overtime' : 'missing'}`}>
+                  {minutesToHHMM(Math.abs(dayBalance))}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
         )}
       </div>
 
@@ -662,397 +627,6 @@ export default function Admin() {
           ))}
         </div>
       </Modal>
-
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .admin-header-new {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-        .header-row-1 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .header-row-2 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-        }
-        .month-nav-new {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .month-label-new {
-          font-weight: 700;
-          text-transform: capitalize;
-          min-width: 140px;
-          text-align: center;
-          font-size: 0.95rem;
-        }
-        .toggles-group {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .toggle-container-new {
-          background: rgba(255, 255, 255, 0.03);
-          padding: 4px;
-          border-radius: 12px;
-          display: flex;
-          gap: 4px;
-          border: 1px solid var(--glass-border);
-        }
-        .view-toggle-new {
-          padding: 6px 14px;
-          border-radius: 9px;
-          font-size: 0.7rem;
-          font-weight: 700;
-          text-decoration: none;
-          color: var(--text-muted);
-          transition: all 0.2s;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-family: inherit;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .view-toggle-new.active {
-          background: var(--primary);
-          color: white;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-        .btn-saldos-new {
-          background: rgba(99, 102, 241, 0.1);
-          border: 1px solid rgba(99, 102, 241, 0.3);
-          color: #a5b4fc;
-          padding: 8px 16px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 700;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.2s;
-        }
-        .btn-saldos-new:hover {
-          background: var(--primary);
-          color: white;
-          transform: translateY(-1px);
-        }
-        .balance-mini-left {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 16px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          margin-top: 10px;
-        }
-        .balance-mini-left .label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          font-weight: 600;
-        }
-        .balance-mini-left .value {
-          font-size: 1rem;
-          font-weight: 800;
-        }
-
-        @media (max-width: 600px) {
-          .header-row-1 {
-            flex-direction: row;
-            justify-content: space-between;
-          }
-          .header-row-2 {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .toggles-group {
-            justify-content: space-between;
-          }
-          .toggle-container-new {
-            flex: 1;
-          }
-          .view-toggle-new {
-            flex: 1;
-            text-align: center;
-          }
-          .compact-balance-new {
-            justify-content: center;
-          }
-          .month-label-new {
-            min-width: 110px;
-            font-size: 0.85rem;
-          }
-          h1 {
-            font-size: 1.4rem;
-          }
-        }
-        .custom-select {
-          width: 100%;
-          background: rgba(0, 0, 0, 0.3);
-          border: 1px solid var(--glass-border);
-          border-radius: 14px;
-          padding: 12px 16px;
-          color: white;
-          font-size: 0.9rem;
-          appearance: none;
-          cursor: pointer;
-          outline: none;
-          transition: all 0.2s;
-        }
-        .custom-select:focus {
-          border-color: var(--primary);
-          background: rgba(0, 0, 0, 0.4);
-        }
-
-        .filters-grid-new {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-
-        @media (max-width: 600px) {
-          .filters-grid-new {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .team-balance-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .team-balance-item {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 16px;
-          padding: 12px 16px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          transition: all 0.2s;
-        }
-        .team-balance-item.clickable {
-          cursor: pointer;
-        }
-        .team-balance-item.clickable:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: var(--primary);
-          transform: translateY(-2px);
-        }
-        .emp-info {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .emp-avatar {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          background: var(--primary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-        }
-        .emp-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .emp-name {
-          font-weight: 700;
-          font-size: 0.9rem;
-        }
-        .emp-team {
-          font-size: 0.7rem;
-          color: var(--text-muted);
-        }
-        .emp-balances {
-          display: flex;
-          gap: 16px;
-        }
-        .balance-mini {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 2px;
-        }
-        .balance-mini .label {
-          font-size: 0.55rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-        }
-        .balance-mini .value {
-          font-size: 0.85rem;
-          font-weight: 700;
-        }
-
-        /* Weekly Schedule List */
-        .weekly-schedule-container {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-top: 10px;
-        }
-        .schedule-day-row {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 20px;
-          padding: 16px;
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .schedule-day-row:hover {
-          background: rgba(255, 255, 255, 0.06);
-          transform: translateX(4px);
-        }
-        .day-info-mini {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          min-width: 50px;
-          padding-right: 20px;
-          border-right: 1px solid var(--glass-border);
-        }
-        .day-num {
-          font-size: 1.4rem;
-          font-weight: 800;
-          line-height: 1;
-        }
-        .day-name {
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          color: var(--text-muted);
-          font-weight: 700;
-        }
-        .punches-flow {
-          flex: 1;
-          display: flex;
-          gap: 12px;
-          overflow-x: auto;
-          padding-bottom: 4px;
-        }
-        .day-punches-wrapper {
-          display: flex;
-          gap: 12px;
-        }
-        .punch-card-mini {
-          background: rgba(0, 0, 0, 0.2);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          padding: 8px 16px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-width: fit-content;
-        }
-        .punch-item {
-          display: flex;
-          flex-direction: column;
-        }
-        .p-label {
-          font-size: 0.55rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-        }
-        .p-time {
-          font-size: 0.9rem;
-          font-weight: 700;
-        }
-        .punch-arrow {
-          color: var(--text-muted);
-          font-size: 0.8rem;
-          opacity: 0.5;
-        }
-        .day-balance-tag {
-          padding: 6px 12px;
-          border-radius: 10px;
-          font-size: 0.8rem;
-          font-weight: 800;
-          min-width: 70px;
-          text-align: center;
-        }
-        .no-records-text {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-          font-style: italic;
-        }
-
-        @media (max-width: 600px) {
-          .schedule-day-row {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-          }
-          .day-info-mini {
-            flex-direction: row;
-            justify-content: space-between;
-            border-right: none;
-            border-bottom: 1px solid var(--glass-border);
-            padding-right: 0;
-            padding-bottom: 8px;
-          }
-          .day-num { font-size: 1.1rem; }
-          .punches-flow {
-            flex-wrap: wrap;
-          }
-          .day-balance-tag {
-            align-self: flex-end;
-          }
-        }
-
-        .team-day-summary {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-        .summary-text {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          font-weight: 500;
-        }
-        .scheduled-avatars-new {
-          display: flex;
-          gap: -4px; /* Sobrepor levemente */
-        }
-        .avatar-mini-new {
-          width: 24px;
-          height: 24px;
-          border-radius: 8px;
-          border: 2px solid #0f172a;
-          background: var(--primary);
-          overflow: hidden;
-          margin-left: -8px;
-        }
-        .avatar-mini-new:first-child {
-          margin-left: 0;
-        }
-        .avatar-mini-new img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .avatar-more-new {
-          font-size: 0.65rem;
-          font-weight: 700;
-          color: var(--text-muted);
-          margin-left: 8px;
-        }
-      `}} />
     </div>
   );
 }

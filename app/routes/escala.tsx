@@ -19,8 +19,11 @@ import type { ShouldRevalidateFunction } from "react-router";
 import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
 import { type Shift } from "../types";
-import { getDaysInMonth } from "../utils/calendar";
 import { Modal } from "../components/Modal";
+import { CalendarGrid } from "../components/CalendarGrid";
+import { MonthNavigator } from "../components/MonthNavigator";
+import "../styles/calendar.css";
+import "../styles/escala.css";
 
 // Só rebusca dados do servidor quando a própria action da escala for executada
 export const shouldRevalidate: ShouldRevalidateFunction = ({ formAction, defaultShouldRevalidate }) => {
@@ -167,9 +170,6 @@ export default function Escala() {
   const [selectedDateStr, setSelectedDateStr] = useState(new Date().toISOString().split('T')[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [escala, setEscala] = useState<Shift[]>(initialShifts);
-
-  const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
-
   const changeMonth = (offset: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
   };
@@ -246,13 +246,7 @@ export default function Escala() {
         <div className="admin-header-new">
           <div className="header-row-1">
             <h1>Escala Mensal</h1>
-            <div className="month-nav-new">
-              <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-              <span className="month-label-new">
-                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-              </span>
-              <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
-            </div>
+            <MonthNavigator currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
         </div>
 
@@ -335,23 +329,18 @@ export default function Escala() {
 
 
 
-        <div className="calendar-grid" style={{ marginBottom: '24px' }}>
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <div key={d} className="weekday-label">{d}</div>
-          ))}
-          {daysInMonth.map((d, i) => {
-            if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
-
-            const isSelected = selectedDateStr === d.dateStr && isModalOpen;
-
+        <CalendarGrid
+          currentDate={currentDate}
+          selectedDateStr={selectedDateStr}
+          isModalOpen={isModalOpen}
+          onDayClick={handleDayClick}
+          renderDay={(d, isSelected) => {
             if (selectedUserId === "todos") {
               const scheduledUsers = filteredEmployees.filter(emp => escala.find(s => s.userId === emp.id && s.date === d.dateStr));
               const count = scheduledUsers.length;
               return (
                 <div
-                  key={d.dateStr}
                   className={`calendar-day ${isSelected ? 'selected' : ''}`}
-                  onClick={() => handleDayClick(d.dateStr)}
                 >
                   {d.day}
                   {count > 0 && (
@@ -375,9 +364,7 @@ export default function Escala() {
             const isScheduled = escala.find(s => s.userId === selectedUserId && s.date === d.dateStr);
             return (
               <div
-                key={d.dateStr}
                 className={`calendar-day ${isScheduled ? 'selected' : ''}`}
-                onClick={() => handleDayClick(d.dateStr)}
                 style={{
                   background: isScheduled ? 'rgba(16, 185, 129, 0.15)' : '',
                   borderColor: isScheduled ? 'var(--success)' : '',
@@ -392,8 +379,8 @@ export default function Escala() {
                 )}
               </div>
             );
-          })}
-        </div>
+          }}
+        />
       </div>
 
       <Modal
@@ -444,149 +431,6 @@ export default function Escala() {
           )}
         </div>
       </Modal>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .admin-header-new {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-        .header-row-1 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .header-row-2 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .month-nav-new {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .month-label-new {
-          font-weight: 700;
-          text-transform: capitalize;
-          min-width: 140px;
-          text-align: center;
-          font-size: 0.95rem;
-        }
-        .toggle-container-new {
-          background: rgba(255, 255, 255, 0.03);
-          padding: 4px;
-          border-radius: 12px;
-          display: flex;
-          gap: 4px;
-          border: 1px solid var(--glass-border);
-        }
-        .view-toggle-new {
-          padding: 6px 14px;
-          border-radius: 9px;
-          font-size: 0.7rem;
-          font-weight: 700;
-          text-decoration: none;
-          color: var(--text-muted);
-          transition: all 0.2s;
-        }
-        .view-toggle-new.active {
-          background: var(--primary);
-          color: white;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-
-        @media (max-width: 600px) {
-          .header-row-1 {
-            flex-direction: row;
-            justify-content: space-between;
-          }
-          .month-label-new {
-            min-width: 110px;
-            font-size: 0.85rem;
-          }
-          .toggle-container-new {
-            flex: 1;
-          }
-          .view-toggle-new {
-            flex: 1;
-            text-align: center;
-          }
-          h1 {
-            font-size: 1.4rem;
-          }
-        }
-        .custom-select {
-          width: 100%;
-          background: rgba(0, 0, 0, 0.3);
-          border: 1px solid var(--glass-border);
-          border-radius: 14px;
-          padding: 12px 16px;
-          color: white;
-          font-size: 0.9rem;
-          appearance: none;
-          cursor: pointer;
-          outline: none;
-          transition: all 0.2s;
-        }
-        .custom-select:focus {
-          border-color: var(--primary);
-          background: rgba(0, 0, 0, 0.4);
-        }
-
-        .filters-grid-new {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-
-        .scheduled-avatars-new {
-          display: flex;
-          gap: 2px;
-          margin-top: 6px;
-          justify-content: center;
-          flex-wrap: wrap;
-        }
-        .avatar-mini-new {
-          width: 20px;
-          height: 20px;
-          border-radius: 6px;
-          background: var(--primary);
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid #0f172a;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        .avatar-mini-new img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .avatar-more-new {
-          font-size: 0.6rem;
-          color: var(--text-muted);
-          align-self: flex-end;
-          font-weight: bold;
-          margin-left: 2px;
-        }
-
-        @media (max-width: 600px) {
-          .filters-grid-new {
-            grid-template-columns: 1fr;
-          }
-          .avatar-mini-new {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-          }
-          .scheduled-avatars-new {
-            gap: 1px;
-          }
-        }
-      `}} />
     </div>
   );
 }

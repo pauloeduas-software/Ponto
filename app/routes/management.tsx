@@ -17,6 +17,7 @@ import { db } from "../db.server";
 import { requireUserId, getUser } from "../session.server";
 import { Modal } from "../components/Modal";
 import type { User } from "../types";
+import "../styles/management.css";
 
 export async function loader({ request }: { request: Request }) {
   await requireUserId(request);
@@ -118,7 +119,7 @@ export async function action({ request }: { request: Request }) {
       db.prepare("DELETE FROM PunchRecord WHERE userId = ?").run(id);
       db.prepare("DELETE FROM Shift WHERE userId = ?").run(id);
       db.prepare("DELETE FROM UserTeam WHERE userId = ?").run(id);
-      try { db.prepare("DELETE FROM TeamManager WHERE userId = ?").run(id); } catch (e) {}
+      try { db.prepare("DELETE FROM TeamManager WHERE userId = ?").run(id); } catch (e) { }
       db.prepare("DELETE FROM User WHERE id = ?").run(id);
     });
     try {
@@ -297,14 +298,14 @@ export default function Management() {
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px' }}>
               <fetcher.Form method="post" onSubmit={(e) => !confirm("Excluir usuário permanentemente?") && e.preventDefault()}>
                 <input type="hidden" name="_action" value="deleteUser" /><input type="hidden" name="userId" value={currentUser.id} />
-                <button type="submit" style={{ 
-                  background: 'rgba(239, 68, 68, 0.1)', 
-                  color: '#ef4444', 
-                  border: '1px solid rgba(239, 68, 68, 0.2)', 
-                  width: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
+                <button type="submit" style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: '#ef4444',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '8px',
                   padding: '12px 24px',
                   borderRadius: '16px',
@@ -312,12 +313,12 @@ export default function Management() {
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                  }}
                 >
                   <Trash2 size={16} /> Excluir Usuário
                 </button>
@@ -326,10 +327,6 @@ export default function Management() {
           </div>
         )}
       </Modal>
-      <style dangerouslySetInnerHTML={{ __html: `
-        select { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px; color: white; cursor: pointer; }
-        select option { background: #0f172a; color: white; }
-      `}} />
     </div>
   );
 }
