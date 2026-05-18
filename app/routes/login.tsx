@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Form, useActionData, useNavigation } from "react-router";
-import { db } from "../db.server";
-import { createUserSession } from "../session.server";
+
 import {
   User,
   Lock,
@@ -12,7 +11,7 @@ import {
   Clock
 } from "lucide-react";
 
-import bcrypt from "bcryptjs";
+import { registerUser, loginUser } from "../services/authService.server";
 
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
@@ -22,29 +21,11 @@ export async function action({ request }: { request: Request }) {
   const actionType = formData.get("_action");
 
   if (actionType === "register") {
-    // Verifica se o usuário já existe
-    const existing = db.prepare("SELECT id FROM User WHERE username = ?").get(username);
-    if (existing) {
-      return { error: "Este usuário já existe." };
-    }
-
-    const userId = crypto.randomUUID();
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    db.prepare(
-      "INSERT INTO User (id, username, password, name, role) VALUES (?, ?, ?, ?, ?)"
-    ).run(userId, username, hashedPassword, name, 'employee');
-
-    return createUserSession({ userId, redirectTo: "/" });
+    return registerUser(username, password, name);
   }
 
   // Fluxo de Login
-  const user = db.prepare("SELECT * FROM User WHERE username = ?").get(username) as any;
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return { error: "Usuário ou senha inválidos." };
-  }
-
-  return createUserSession({ userId: user.id, redirectTo: "/" });
+  return loginUser(username, password);
 }
 
 export default function Login() {

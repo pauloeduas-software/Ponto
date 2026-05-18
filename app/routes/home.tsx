@@ -9,53 +9,15 @@ import {
 import { useLoaderData, useFetcher, useRevalidator } from "react-router";
 import { timeToMinutes, minutesToTime, minutesToHHMM, formatTimeInput } from "../utils/time";
 import "../styles/home.css";
-import { db } from "../db.server";
-import { requireUserId, getUser } from "../session.server";
+import { getHomeData, saveHomePunchRecord } from "../services/homeService.server";
 
 export async function loader({ request }: { request: Request }) {
-  const userId = await requireUserId(request);
-  const user = await getUser(request);
-
-  const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
-
-  const record = db.prepare("SELECT * FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, dateStr) as any;
-
-  return {
-    user,
-    initialPunches: record ? JSON.parse(record.punches) : [],
-    initialGoal: record?.goalMins ? minutesToHHMM(record.goalMins) : (user as any).goal || "08:00",
-    dateStr
-  };
+  return getHomeData(request);
 }
 
 export async function action({ request }: { request: Request }) {
-  const userId = await requireUserId(request);
   const formData = await request.formData();
-
-  const date = formData.get("date") as string;
-  const punches = formData.get("punches") as string;
-  const workMins = parseInt(formData.get("workMins") as string);
-  const diffMins = parseInt(formData.get("diffMins") as string);
-  const isOvertime = formData.get("isOvertime") === "true" ? 1 : 0;
-
-  const goal = formData.get("goal") as string;
-  const goalMins = timeToMinutes(goal);
-
-  // Manual Upsert for SQLite
-  const existing = db.prepare("SELECT id FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, date);
-  if (existing) {
-    db.prepare(
-      "UPDATE PunchRecord SET punches = ?, workMins = ?, diffMins = ?, isOvertime = ?, goalMins = ? WHERE userId = ? AND date = ?"
-    ).run(punches, workMins, diffMins, isOvertime, goalMins, userId, date);
-  } else {
-    db.prepare(
-      "INSERT INTO PunchRecord (id, userId, date, punches, workMins, diffMins, isOvertime, goalMins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(crypto.randomUUID(), userId, date, punches, workMins, diffMins, isOvertime, goalMins);
-  }
-
-  // Atualiza a meta padrão do usuário para que os próximos dias herdem esse valor
-  db.prepare("UPDATE User SET goal = ? WHERE id = ?").run(goal, userId);
-
+  await saveHomePunchRecord(request, formData);
   return { success: true };
 }
 
