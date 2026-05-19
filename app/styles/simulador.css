@@ -1,0 +1,217 @@
+.day-header-mob {
+  display: none;
+}
+.mob-label {
+  display: none;
+}
+
+.suggestion-top-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  color: #a5b4fc;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.sim-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sim-thead-final {
+  display: grid;
+  grid-template-columns: 100px 1fr 1fr 1fr 1fr 100px;
+  gap: 12px;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 16px;
+}
+.sim-rows-final {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sim-day-row-final {
+  display: grid;
+  grid-template-columns: 100px 1fr 1fr 1fr 1fr 100px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+}
+.sim-day-row-final.active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.col-name {
+  font-size: 0.9rem;
+}
+.col-res-final {
+  text-align: right;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.day-field input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 8px;
+  color: white;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  outline: none;
+}
+.day-field input:focus {
+  border-color: var(--primary);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.pos {
+  color: var(--success) !important;
+}
+.neg {
+  color: var(--error) !important;
+}
+
+.footer-panel-compact {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  padding: 10px 20px;
+  border-radius: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+.balance-compact {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.balance-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.balance-value {
+  font-size: 1.4rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stats-compact {
+  display: flex;
+  gap: 20px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.stat-item strong {
+  color: white;
+  margin-left: 4px;
+}
+
+@media (max-width: 800px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .card {
+    padding: 12px;
+  }
+  .sim-thead-final {
+    display: none;
+  }
+  .sim-day-row-final {
+    display: block;
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  .day-header-mob {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .day-header-mob strong {
+    font-size: 1.1rem;
+  }
+  .day-res-mob {
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+
+  .sim-day-row-final {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .day-header-mob {
+    grid-column: span 2;
+  }
+
+  .mob-label {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .day-field input {
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 8px;
+  }
+
+  .footer-panel-compact {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  .balance-compact {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .stats-compact {
+    justify-content: center;
+  }
+}
+
+/* Simulador Refactored Layout Classes to replace inline styles */
+.simulador-container {
+  align-items: center;
+}
+
+.simulador-card {
+  max-width: 900px;
+  width: 100%;
+}
+
+.simulador-header {
+  margin-bottom: 16px;
+}
+
+.day-field.goal input {
+  color: var(--primary) !important;
+}
+

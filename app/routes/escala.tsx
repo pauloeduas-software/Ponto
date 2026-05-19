@@ -16,11 +16,16 @@ import {
 } from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
-import { db } from "../db.server";
-import { requireUserId, getUser } from "../session.server";
+import { requireUserId, getUser } from "../services/session.server";
 import { type Shift } from "../types";
-import { getDaysInMonth } from "../utils/calendar";
 import { Modal } from "../components/Modal";
+import { CalendarGrid } from "../components/CalendarGrid";
+import { MonthSelector } from "../components/MonthSelector";
+import { AvatarGroup } from "../components/AvatarGroup";
+import { Avatar } from "../components/Avatar";
+import "../styles/calendar.css";
+import "../styles/escala.css";
+import { getEscalaData, saveShifts } from "../services/escalaService.server";
 
 // Só rebusca dados do servidor quando a própria action da escala for executada
 export const shouldRevalidate: ShouldRevalidateFunction = ({ formAction, defaultShouldRevalidate }) => {
@@ -32,87 +37,12 @@ export async function loader({ request }: { request: Request }) {
   await requireUserId(request);
   const user = await getUser(request) as any;
   const url = new URL(request.url);
-  const viewParam = url.searchParams.get("view") || "team";
   const selectedTeamParam = url.searchParams.get("teamFilter") || null;
-
-  // Admins e todos os membros de equipe podem ver a escala
-  const isAdmin = user.role === "admin";
-
-  // Apenas Administradores podem acessar a visão Global
-  const isTeamView = !isAdmin || viewParam === "team";
-
-  let employeesQuery = "SELECT id, name, role, avatarUrl, teamId FROM User";
-  let shiftsQuery = "SELECT * FROM Shift";
-  let params: any[] = [];
-  let teamName = "Geral";
-
-  // Vínculos do usuário logado (todas as equipes)
-  const userTeams = (user.userTeams || []) as any[];
-  const managerTeams = userTeams.filter((ut: any) => ut.role === 'manager');
-
-  // Equipe ativa selecionada para não-admins
-  const activeTeamId = selectedTeamParam || userTeams[0]?.teamId || user.teamId || null;
-  // Role do usuário na equipe ativa
-  const activeTeamRole = userTeams.find((ut: any) => ut.teamId === activeTeamId)?.role || null;
-  // Se o usuário pode editar a equipe ativa (admin sempre pode, manager também)
-  const canEditActiveTeam = isAdmin || activeTeamRole === 'manager';
-
-  if (isAdmin) {
-    // Admin global: sem filtro, sempre traz todos
-  } else if (activeTeamId) {
-    // Visão de equipe (Manager, employee ou Admin com equipe selecionada)
-    employeesQuery = `
-      SELECT DISTINCT u.id, u.name, u.role, u.avatarUrl, u.teamId
-      FROM User u
-      LEFT JOIN UserTeam ut ON u.id = ut.userId
-      WHERE ut.teamId = ? OR u.teamId = ?
-    `;
-    shiftsQuery = `
-      SELECT DISTINCT s.* FROM Shift s
-      JOIN User u ON s.userId = u.id
-      LEFT JOIN UserTeam ut ON s.userId = ut.userId
-      WHERE ut.teamId = ? OR u.teamId = ?
-    `;
-    params = [activeTeamId, activeTeamId];
-    const team = db.prepare("SELECT name FROM Team WHERE id = ?").get(activeTeamId) as any;
-    teamName = team?.name || "Equipe";
-  } else {
-    // Sem equipe: vê apenas a si mesmo
-    employeesQuery += " WHERE id = ?";
-    shiftsQuery = "SELECT * FROM Shift WHERE userId = ?";
-    params = [user.id];
-  }
-
-  const employees = db.prepare(employeesQuery).all(...params) as any[];
-
-  // Attach userTeams
-  const allUserTeams = db.prepare(`
-    SELECT ut.userId, ut.teamId, ut.role, t.name as teamName
-    FROM UserTeam ut
-    JOIN Team t ON ut.teamId = t.id
-  `).all() as any[];
-  
-  const userTeamsMap: Record<string, any[]> = {};
-  for (const link of allUserTeams) {
-    if (!userTeamsMap[link.userId]) userTeamsMap[link.userId] = [];
-    userTeamsMap[link.userId].push(link);
-  }
-
-  employees.forEach(emp => {
-    emp.userTeams = userTeamsMap[emp.id] || [];
-  });
-
-  const shifts = db.prepare(shiftsQuery).all(...params) as any[];
-  const teams = db.prepare("SELECT * FROM Team ORDER BY name").all() as any[];
-
-  return {
-    user, employees, initialShifts: shifts, teamName, teams,
-    userTeams, managerTeams, isAdmin, activeTeamId, canEditActiveTeam
-  };
+  return getEscalaData(user, selectedTeamParam);
 }
 
 export async function action({ request }: { request: Request }) {
-  const userId = await requireUserId(request);
+  await requireUserId(request);
   const user = await getUser(request) as any;
 
   const formData = await request.formData();
@@ -120,37 +50,8 @@ export async function action({ request }: { request: Request }) {
   const targetUserId = formData.get("userId") as string;
 
   if (actionType === "save") {
-    // Verifica se o usuário pode editar: admin, ou manager na equipe do target
-    const isAdmin = user?.role === 'admin';
-    let canEdit = isAdmin;
-
-    if (!isAdmin && targetUserId) {
-      // Busca as equipes em comum entre o executor e o target, onde o executor é manager
-      const sharedManagerTeam = db.prepare(`
-        SELECT ut1.teamId FROM UserTeam ut1
-        JOIN UserTeam ut2 ON ut1.teamId = ut2.teamId
-        WHERE ut1.userId = ? AND ut1.role = 'manager'
-        AND ut2.userId = ?
-        LIMIT 1
-      `).get(user.id, targetUserId);
-      canEdit = !!sharedManagerTeam;
-    }
-
-    if (!canEdit) {
-      return { error: "Acesso negado." };
-    }
-
-    const shiftsJson = formData.get("shifts") as string;
-    const shifts = JSON.parse(shiftsJson) as Shift[];
-
-    db.prepare("DELETE FROM Shift WHERE userId = ?").run(targetUserId);
-
-    const insert = db.prepare("INSERT INTO Shift (id, userId, date, startTime, endTime, type) VALUES (?, ?, ?, ?, ?, ?)");
-    for (const s of shifts) {
-      insert.run(crypto.randomUUID(), s.userId, s.date, s.startTime, s.endTime, s.type);
-    }
-
-    return { success: true };
+    const shifts = JSON.parse(formData.get("shifts") as string) as Shift[];
+    return saveShifts(user, targetUserId, shifts);
   }
 
   return null;
@@ -167,9 +68,6 @@ export default function Escala() {
   const [selectedDateStr, setSelectedDateStr] = useState(new Date().toISOString().split('T')[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [escala, setEscala] = useState<Shift[]>(initialShifts);
-
-  const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
-
   const changeMonth = (offset: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
   };
@@ -246,40 +144,23 @@ export default function Escala() {
         <div className="admin-header-new">
           <div className="header-row-1">
             <h1>Escala Mensal</h1>
-            <div className="month-nav-new">
-              <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-              <span className="month-label-new">
-                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-              </span>
-              <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
-            </div>
+            <MonthSelector currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
         </div>
 
         {/* Badge de modo visualização: aparece quando não pode editar a equipe ativa */}
         {!isAdmin && !canEditActiveTeam && activeTeamId && (
-          <div style={{
-            padding: '8px 12px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid var(--glass-border)',
-            borderRadius: '10px',
-            fontSize: '0.8rem',
-            color: 'var(--text-muted)',
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
+          <div className="escala-info-badge">
             <XCircle size={14} /> Modo Visualização — você é funcionário desta equipe
           </div>
         )}
 
-        <div style={{ marginBottom: '24px' }}>
-          <div className="filters-grid-new" style={!(isAdmin || managerTeams.length > 0) ? { gridTemplateColumns: '1fr' } : {}}>
+        <div className="escala-filters-container">
+          <div className={`filters-grid-new ${!(isAdmin || managerTeams.length > 0) ? 'single-col' : ''}`}>
             {(isAdmin || managerTeams.length > 0) && (
-              <div className="input-group" style={{ marginBottom: 0 }}>
+              <div className="input-group input-group-no-margin">
                 <div className="label-container">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <label className="label-icon-flex">
                     <Layers size={12} /> Filtrar Equipe
                   </label>
                 </div>
@@ -313,9 +194,9 @@ export default function Escala() {
               </div>
             )}
             
-            <div className="input-group" style={{ marginBottom: 0 }}>
+            <div className="input-group input-group-no-margin">
               <div className="label-container">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <label className="label-icon-flex">
                   <Users size={12} /> Filtrar Colaborador
                 </label>
               </div>
@@ -335,38 +216,26 @@ export default function Escala() {
 
 
 
-        <div className="calendar-grid" style={{ marginBottom: '24px' }}>
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <div key={d} className="weekday-label">{d}</div>
-          ))}
-          {daysInMonth.map((d, i) => {
-            if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
-
-            const isSelected = selectedDateStr === d.dateStr && isModalOpen;
-
+        <CalendarGrid
+          currentDate={currentDate}
+          selectedDateStr={selectedDateStr}
+          isModalOpen={isModalOpen}
+          onDayClick={handleDayClick}
+          renderDay={(d, isSelected) => {
             if (selectedUserId === "todos") {
               const scheduledUsers = filteredEmployees.filter(emp => escala.find(s => s.userId === emp.id && s.date === d.dateStr));
               const count = scheduledUsers.length;
               return (
                 <div
-                  key={d.dateStr}
                   className={`calendar-day ${isSelected ? 'selected' : ''}`}
-                  onClick={() => handleDayClick(d.dateStr)}
                 >
                   {d.day}
                   {count > 0 && (
-                    <div className="scheduled-avatars-new">
-                      {scheduledUsers.slice(0, 3).map((u, idx) => (
-                        <div key={idx} className="avatar-mini-new">
-                          {u.avatarUrl ? (
-                            <img src={u.avatarUrl} alt="" />
-                          ) : (
-                            <UserIcon size={12} color="white" />
-                          )}
-                        </div>
-                      ))}
-                      {count > 3 && <div className="avatar-more-new">+{count - 3}</div>}
-                    </div>
+                    <AvatarGroup
+                      users={scheduledUsers}
+                      max={3}
+                      size={22}
+                    />
                   )}
                 </div>
               );
@@ -375,218 +244,48 @@ export default function Escala() {
             const isScheduled = escala.find(s => s.userId === selectedUserId && s.date === d.dateStr);
             return (
               <div
-                key={d.dateStr}
-                className={`calendar-day ${isScheduled ? 'selected' : ''}`}
-                onClick={() => handleDayClick(d.dateStr)}
-                style={{
-                  background: isScheduled ? 'rgba(16, 185, 129, 0.15)' : '',
-                  borderColor: isScheduled ? 'var(--success)' : '',
-                  cursor: (isAdmin || canEditActiveTeam) ? 'pointer' : 'default'
-                }}
+                className={`calendar-day ${isScheduled ? 'selected scheduled' : ''} ${(isAdmin || canEditActiveTeam) ? 'editable-cursor' : 'default-cursor'}`}
               >
                 {d.day}
                 {isScheduled ? (
-                  <CheckCircle2 size={12} style={{ color: 'var(--success)', marginTop: '4px' }} />
+                  <CheckCircle2 size={12} className="escala-day-icon success" />
                 ) : (
-                  <XCircle size={10} style={{ color: 'rgba(255,255,255,0.1)', marginTop: '4px' }} />
+                  <XCircle size={10} className="escala-day-icon muted" />
                 )}
               </div>
             );
-          })}
-        </div>
+          }}
+        />
       </div>
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={new Date(selectedDateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-        icon={<CalendarIcon size={20} style={{ color: 'var(--primary)' }} />}
+        icon={<CalendarIcon size={20} color="var(--primary)" />}
         className="large"
       >
         <div className="history-list">
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Colaboradores escalados para este dia:</p>
+          <p className="escala-modal-subtitle">Colaboradores escalados para este dia:</p>
           {scheduledEmployeesOnSelectedDay.length > 0 ? (
             scheduledEmployeesOnSelectedDay.map(emp => (
-              <div key={emp.id} style={{
-                padding: '12px 16px',
-                marginBottom: '8px',
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid var(--glass-border)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'var(--primary)',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(255,255,255,0.1)'
-                }}>
-                  {emp.avatarUrl ? (
-                    <img src={emp.avatarUrl} alt={emp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <UserIcon color="white" size={20} />
-                  )}
-                </div>
-                <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{emp.name}</div>
+              <div key={emp.id} className="escala-modal-employee-card">
+                <Avatar 
+                  src={emp.avatarUrl} 
+                  name={emp.name} 
+                  size={44} 
+                  className="escala-modal-avatar"
+                />
+                <div className="escala-modal-employee-name">{emp.name}</div>
               </div>
             ))
           ) : (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <p style={{ color: 'var(--text-muted)' }}>Ninguém escalado.</p>
+            <div className="escala-modal-empty-box">
+              <p>Ninguém escalado.</p>
             </div>
           )}
         </div>
       </Modal>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .admin-header-new {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-        .header-row-1 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .header-row-2 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .month-nav-new {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .month-label-new {
-          font-weight: 700;
-          text-transform: capitalize;
-          min-width: 140px;
-          text-align: center;
-          font-size: 0.95rem;
-        }
-        .toggle-container-new {
-          background: rgba(255, 255, 255, 0.03);
-          padding: 4px;
-          border-radius: 12px;
-          display: flex;
-          gap: 4px;
-          border: 1px solid var(--glass-border);
-        }
-        .view-toggle-new {
-          padding: 6px 14px;
-          border-radius: 9px;
-          font-size: 0.7rem;
-          font-weight: 700;
-          text-decoration: none;
-          color: var(--text-muted);
-          transition: all 0.2s;
-        }
-        .view-toggle-new.active {
-          background: var(--primary);
-          color: white;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-
-        @media (max-width: 600px) {
-          .header-row-1 {
-            flex-direction: row;
-            justify-content: space-between;
-          }
-          .month-label-new {
-            min-width: 110px;
-            font-size: 0.85rem;
-          }
-          .toggle-container-new {
-            flex: 1;
-          }
-          .view-toggle-new {
-            flex: 1;
-            text-align: center;
-          }
-          h1 {
-            font-size: 1.4rem;
-          }
-        }
-        .custom-select {
-          width: 100%;
-          background: rgba(0, 0, 0, 0.3);
-          border: 1px solid var(--glass-border);
-          border-radius: 14px;
-          padding: 12px 16px;
-          color: white;
-          font-size: 0.9rem;
-          appearance: none;
-          cursor: pointer;
-          outline: none;
-          transition: all 0.2s;
-        }
-        .custom-select:focus {
-          border-color: var(--primary);
-          background: rgba(0, 0, 0, 0.4);
-        }
-
-        .filters-grid-new {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-
-        .scheduled-avatars-new {
-          display: flex;
-          gap: 2px;
-          margin-top: 6px;
-          justify-content: center;
-          flex-wrap: wrap;
-        }
-        .avatar-mini-new {
-          width: 20px;
-          height: 20px;
-          border-radius: 6px;
-          background: var(--primary);
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid #0f172a;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        .avatar-mini-new img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .avatar-more-new {
-          font-size: 0.6rem;
-          color: var(--text-muted);
-          align-self: flex-end;
-          font-weight: bold;
-          margin-left: 2px;
-        }
-
-        @media (max-width: 600px) {
-          .filters-grid-new {
-            grid-template-columns: 1fr;
-          }
-          .avatar-mini-new {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-          }
-          .scheduled-avatars-new {
-            gap: 1px;
-          }
-        }
-      `}} />
     </div>
   );
 }

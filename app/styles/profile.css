@@ -1,0 +1,228 @@
+.profile-layout-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.profile-user-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 24px;
+  border: 1px solid var(--glass-border);
+}
+
+@media (max-width: 600px) {
+  .profile-user-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+.profile-avatar-wrapper {
+  position: relative;
+}
+
+.profile-avatar-img {
+  border-radius: 32px !important;
+  border: 3px solid var(--glass-border) !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+.profile-avatar-camera-badge {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: var(--primary);
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #0f172a;
+  pointer-events: none;
+}
+
+.profile-details-col {
+  flex: 1;
+}
+
+.profile-name-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 600px) {
+  .profile-name-input-wrapper {
+    justify-content: center;
+  }
+}
+
+.profile-name-input {
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: white;
+  width: 100%;
+  outline: none;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom-color 0.2s ease;
+}
+
+@media (max-width: 600px) {
+  .profile-name-input {
+    text-align: center;
+  }
+}
+
+.profile-name-input:focus {
+  border-bottom: 1px solid var(--primary) !important;
+}
+
+.profile-username-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.profile-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .profile-badges-row {
+    justify-content: center;
+  }
+}
+
+.profile-badge-role-admin {
+  padding: 4px 12px;
+  background: rgba(168, 85, 247, 0.15);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-block;
+  text-transform: uppercase;
+  color: #d8b4fe;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.profile-badge-role-user {
+  padding: 4px 12px;
+  background: rgba(167, 139, 250, 0.05);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-block;
+  text-transform: uppercase;
+  color: #a78bfa;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(167, 139, 250, 0.1);
+}
+
+.profile-badge-team-primary {
+  padding: 4px 12px;
+  background: rgba(168, 85, 247, 0.05);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.profile-badge-team-manager {
+  padding: 4px 12px;
+  background: rgba(139, 92, 246, 0.05);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.profile-badge-team-employee {
+  padding: 4px 12px;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.profile-admin-banner {
+  padding: 20px;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 600px) {
+  .profile-admin-banner {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+}
+
+.profile-admin-banner-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+}
+
+.profile-admin-banner-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.profile-admin-banner-link {
+  padding: 10px 16px;
+  background: var(--primary);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-logout-wrapper {
+  margin-top: 12px;
+}
+
+.btn-profile-logout {
+  background: rgba(99, 102, 241, 0.05) !important;
+  border: 1px solid rgba(99, 102, 241, 0.1) !important;
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+}
+
+.btn-profile-logout svg {
+  margin-right: 10px;
+}

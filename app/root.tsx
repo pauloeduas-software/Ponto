@@ -11,6 +11,7 @@ import {
   useRouteLoaderData,
   useNavigation
 } from "react-router";
+import type { ShouldRevalidateFunction } from "react-router";
 import { useEffect, useState, useMemo } from "react";
 import {
   Clock,
@@ -20,19 +21,40 @@ import {
   Calculator,
   User as UserIcon
 } from "lucide-react";
-import { getUser } from "./session.server";
+import { getUser } from "./services/session.server";
+import { Avatar } from "./components/Avatar";
 
 export async function loader({ request }: { request: Request }) {
   const user = await getUser(request);
   return { user };
 }
 
-// Otimização: O root só revalida se houver mudança de página ou login/logout
-// Evita que o auto-sync da Home fique recarregando os dados do usuário logado
-// Otimização: Removida a trava de revalidação para garantir que mudanças de cargo reflitam na UI imediatamente
-export function shouldRevalidate() {
-  return true;
-}
+// Otimização: Evita revalidação desnecessária do root loader nas trocas normais de página.
+// Revalida apenas se houver submissões de dados (mutações) ou se o usuário navegar
+// de/para a página de perfil (onde pode atualizar dados da conta).
+export const shouldRevalidate: ShouldRevalidateFunction = ({
+  formMethod,
+  currentUrl,
+  nextUrl,
+  actionResult
+}) => {
+  // Revalida se houve envio de formulário (mutações via POST, PUT, DELETE, etc)
+  if (formMethod && formMethod !== "GET") {
+    return true;
+  }
+  
+  // Revalida se houver um resultado de action bem-sucedido
+  if (actionResult) {
+    return true;
+  }
+
+  // Revalida se navegar de ou para a página de perfil
+  if (currentUrl.pathname === "/perfil" || nextUrl.pathname === "/perfil") {
+    return true;
+  }
+
+  return false;
+};
 
 export const links = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -60,38 +82,30 @@ function Sidebar({ user }: { user: any }) {
 
   return (
     <aside className="sidebar">
-      <Link to="/" prefetch="intent" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
+      <Link to="/" prefetch="render" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
         <Clock size={24} />
       </Link>
 
       {(user?.role === 'admin' || user?.role === 'manager') && (
-        <Link to="/admin" prefetch="intent" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
+        <Link to="/admin" prefetch="render" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
           <Shield size={24} />
         </Link>
       )}
 
-      <Link to="/escala" prefetch="intent" className={`sidebar-link ${path === '/escala' ? 'active' : ''}`} title="Escala">
+      <Link to="/escala" prefetch="render" className={`sidebar-link ${path === '/escala' ? 'active' : ''}`} title="Escala">
         <CalendarClock size={24} />
       </Link>
 
-      <Link to="/dashboard" prefetch="intent" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
+      <Link to="/dashboard" prefetch="render" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
         <LayoutDashboard size={24} />
       </Link>
       
-      <Link to="/simulador" prefetch="intent" className={`sidebar-link ${path === '/simulador' ? 'active' : ''}`} title="Simulador de Horas">
+      <Link to="/simulador" prefetch="render" className={`sidebar-link ${path === '/simulador' ? 'active' : ''}`} title="Simulador de Horas">
         <Calculator size={24} />
       </Link>
 
-      <Link to="/perfil" prefetch="intent" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
-        {user?.avatarUrl ? (
-          <img
-            src={user.avatarUrl}
-            alt="Perfil"
-            style={{ width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover' }}
-          />
-        ) : (
-          <UserIcon size={24} />
-        )}
+      <Link to="/perfil" prefetch="render" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
+        <Avatar src={user?.avatarUrl} name={user?.name} size={28} className="sidebar-avatar" />
       </Link>
     </aside>
   );
@@ -102,23 +116,7 @@ function ProgressBar() {
   const active = navigation.state !== "idle";
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: "3px",
-        zIndex: 9999,
-        transition: "transform 200ms ease-in-out, opacity 200ms",
-        opacity: active ? 1 : 0,
-        transform: `scaleX(${active ? 1 : 0})`,
-        transformOrigin: "left",
-        background: "linear-gradient(90deg, var(--primary) 0%, #818cf8 100%)",
-        boxShadow: "0 0 8px var(--primary)",
-        pointerEvents: "none",
-      }}
-    />
+    <div className={`global-progress-bar ${active ? 'active' : ''}`} />
   );
 }
 

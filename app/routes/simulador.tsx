@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   Calculator, 
   RefreshCcw, 
@@ -8,7 +8,8 @@ import {
   Lightbulb
 } from "lucide-react";
 import { useRouteLoaderData } from "react-router";
-import { timeToMinutes, minutesToHHMM, minutesToTime } from "../utils/time";
+import { timeToMinutes, minutesToTime, minutesToHHMM, formatTimeInput } from "../utils/time";
+import "../styles/simulador.css";
 
 interface SimDay {
   id: string;
@@ -34,14 +35,40 @@ export default function Simulador() {
   ];
 
   const [days, setDays] = useState<SimDay[]>(initialDays);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const userId = rootData?.user?.id || "guest";
+  const storageKey = `ponto_simulador_dados_${userId}`;
+
+  // Carrega do LocalStorage na montagem (apenas client-side) ou quando o usuário mudar
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        setDays(JSON.parse(saved));
+      } catch (e) {
+        console.error("Erro ao carregar dados salvos do simulador", e);
+      }
+    } else {
+      setDays(initialDays);
+    }
+    setIsLoaded(true);
+  }, [storageKey]);
+
+  // Salva no LocalStorage sempre que os dias mudarem (após o carregamento inicial)
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem(storageKey, JSON.stringify(days));
+    }
+  }, [days, isLoaded, storageKey]);
+
+  const handleReset = () => {
+    localStorage.removeItem(storageKey);
+    setDays(initialDays);
+  };
 
   const updateField = (id: string, field: keyof SimDay, value: string) => {
-    const digits = value.replace(/[^0-9]/g, "");
-    let h = digits.slice(0, 2);
-    let m = digits.slice(2, 4);
-    if (h.length === 2 && parseInt(h) > 23) h = "23";
-    if (m.length === 2 && parseInt(m) > 59) m = "59";
-    const formatted = digits.length > 2 ? h + ":" + m : h;
+    const formatted = formatTimeInput(value);
     setDays(prev => prev.map(d => d.id === id ? { ...d, [field]: formatted } : d));
   };
 
@@ -83,14 +110,14 @@ export default function Simulador() {
   }, [results]);
 
   return (
-    <div className="container" style={{ alignItems: 'center' }}>
-      <div className="card" style={{ maxWidth: '900px', width: '100%' }}>
-        <div className="header" style={{ marginBottom: '16px' }}>
+    <div className="container simulador-container">
+      <div className="card simulador-card">
+        <div className="header simulador-header">
           <div>
             <h1>Simulador</h1>
           </div>
           <div className="header-actions">
-            <button className="icon-btn" onClick={() => setDays(initialDays)} title="Resetar"><RefreshCcw size={18} /></button>
+            <button className="icon-btn" onClick={handleReset} title="Resetar"><RefreshCcw size={18} /></button>
           </div>
         </div>
 
@@ -124,7 +151,7 @@ export default function Simulador() {
 
                 {/* Colunas do Desktop (que se adaptam no mobile) */}
                 <div className="col-name desktop-only"><strong>{d.name}</strong></div>
-                <div className="day-field"><label className="mob-label">Meta</label><input value={d.goal} onChange={e => updateField(d.id, 'goal', e.target.value)} maxLength={5} style={{ color: 'var(--primary)' }} /></div>
+                <div className="day-field goal"><label className="mob-label">Meta</label><input value={d.goal} onChange={e => updateField(d.id, 'goal', e.target.value)} maxLength={5} /></div>
                 <div className="day-field"><label className="mob-label">Entrada</label><input placeholder="--:--" value={d.start} onChange={e => updateField(d.id, 'start', e.target.value)} maxLength={5} /></div>
                 <div className="day-field"><label className="mob-label">Saída</label><input placeholder="--:--" value={d.end} onChange={e => updateField(d.id, 'end', e.target.value)} maxLength={5} /></div>
                 <div className="day-field"><label className="mob-label">Almoço</label><input placeholder="00:00" value={d.break} onChange={e => updateField(d.id, 'break', e.target.value)} maxLength={5} /></div>
@@ -153,121 +180,6 @@ export default function Simulador() {
           </div>
         </div>
       </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        .day-header-mob { display: none; }
-        .mob-label { display: none; }
-        
-        .suggestion-top-banner {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 16px;
-          background: rgba(99, 102, 241, 0.08);
-          border: 1px solid rgba(99, 102, 241, 0.2);
-          border-radius: 12px;
-          color: #a5b4fc;
-          font-size: 0.85rem;
-          font-weight: 700;
-          margin-bottom: 12px;
-        }
-
-        .sim-content { display: flex; flex-direction: column; gap: 8px; }
-        .sim-thead-final {
-          display: grid;
-          grid-template-columns: 100px 1fr 1fr 1fr 1fr 100px;
-          gap: 12px;
-          text-align: center;
-          font-size: 0.65rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          color: var(--text-muted);
-          padding: 0 16px;
-        }
-        .sim-rows-final { display: flex; flex-direction: column; gap: 6px; }
-        .sim-day-row-final {
-          display: grid;
-          grid-template-columns: 100px 1fr 1fr 1fr 1fr 100px;
-          gap: 12px;
-          align-items: center;
-          padding: 8px 16px;
-          background: rgba(255,255,255,0.02);
-          border: 1px solid var(--glass-border);
-          border-radius: 14px;
-        }
-        .sim-day-row-final.active { background: rgba(255,255,255,0.05); }
-        
-        .col-name { font-size: 0.9rem; }
-        .col-res-final { text-align: right; font-weight: 800; font-size: 0.95rem; color: var(--text-muted); }
-        
-        .day-field input {
-          width: 100%;
-          background: rgba(0,0,0,0.25);
-          border: 1px solid var(--glass-border);
-          border-radius: 10px;
-          padding: 8px;
-          color: white;
-          text-align: center;
-          font-size: 0.95rem;
-          font-weight: 600;
-          outline: none;
-        }
-        .day-field input:focus { border-color: var(--primary); background: rgba(0,0,0,0.4); }
-        
-        .pos { color: var(--success) !important; }
-        .neg { color: var(--error) !important; }
-
-        .footer-panel-compact {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          padding: 10px 20px;
-          border-radius: 14px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 20px;
-        }
-        .balance-compact { display: flex; align-items: baseline; gap: 12px; }
-        .balance-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
-        .balance-value { font-size: 1.4rem; font-weight: 900; display: flex; align-items: center; gap: 8px; }
-        .stats-compact { display: flex; gap: 20px; font-size: 0.8rem; color: var(--text-muted); }
-        .stat-item strong { color: white; margin-left: 4px; }
-
-        @media (max-width: 800px) {
-          .desktop-only { display: none !important; }
-          .card { padding: 12px; }
-          .sim-thead-final { display: none; }
-          .sim-day-row-final {
-            display: block;
-            padding: 12px;
-            margin-bottom: 8px;
-          }
-          .day-header-mob {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-          }
-          .day-header-mob strong { font-size: 1.1rem; }
-          .day-res-mob { font-size: 1.1rem; font-weight: 800; }
-          
-          .sim-day-row-final {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-          }
-          .day-header-mob { grid-column: span 2; }
-          
-          .mob-label { display: block; font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; font-weight: 700; text-align: center; }
-          .day-field input { padding: 10px; font-size: 1rem; border-radius: 8px; }
-          
-          .footer-panel-compact { flex-direction: column; gap: 12px; text-align: center; }
-          .balance-compact { flex-direction: column; align-items: center; gap: 4px; }
-          .stats-compact { justify-content: center; }
-        }
-      `}} />
     </div>
   );
 }

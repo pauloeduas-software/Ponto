@@ -16,32 +16,22 @@ import {
 } from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
 import { type SavedDay } from "../types";
-import { minutesToTime, timeToMinutes, minutesToHHMM } from "../utils/time";
-import { getDaysInMonth } from "../utils/calendar";
+import { minutesToTime, timeToMinutes, minutesToHHMM, formatTimeInput } from "../utils/time";
 import { Modal } from "../components/Modal";
-import { StatCard } from "../components/StatCard";
-import { db } from "../db.server";
-import { requireUserId, getUser } from "../session.server";
+import { InfoCard } from "../components/InfoCard";
+import { CalendarGrid } from "../components/CalendarGrid";
+import { CalendarVertical } from "../components/CalendarVertical";
+import { MonthSelector } from "../components/MonthSelector";
+import { DayInfo } from "../components/DayInfo";
+import "../styles/calendar.css";
+import "../styles/dashboard.css";
+import { requireUserId, getUser } from "../services/session.server";
+import { getDashboardHistory, savePunchRecord, deletePunchRecord } from "../services/dashboardService.server";
 
 export async function loader({ request }: { request: Request }) {
   const userId = await requireUserId(request);
   const user = await getUser(request);
-
-  const records = db.prepare("SELECT * FROM PunchRecord WHERE userId = ? ORDER BY date DESC").all(userId) as any[];
-
-  const history: SavedDay[] = records.map(r => ({
-    date: r.date,
-    punches: JSON.parse(r.punches),
-    workMins: r.workMins,
-    diffMins: r.diffMins,
-    goalMins: r.goalMins || 480,
-    goal: minutesToHHMM(r.goalMins || 480),
-    isOvertime: r.isOvertime === 1,
-    worked: minutesToHHMM(r.workMins),
-    diff: minutesToHHMM(Math.abs(r.diffMins))
-  }));
-
-  return { user, history };
+  return { user, history: getDashboardHistory(userId) };
 }
 
 export async function action({ request }: { request: Request }) {
@@ -54,28 +44,20 @@ export async function action({ request }: { request: Request }) {
   const date = formData.get("date") as string;
 
   if (actionType === "delete") {
-    db.prepare("DELETE FROM PunchRecord WHERE userId = ? AND date = ?").run(userId, date);
+    deletePunchRecord(userId, date);
     return { success: true };
   }
 
   if (actionType === "save") {
-    const punches = formData.get("punches") as string;
-    const workMins = parseInt(formData.get("workMins") as string);
-    const diffMins = parseInt(formData.get("diffMins") as string);
-    const isOvertime = formData.get("isOvertime") === "true" ? 1 : 0;
-    const goal = formData.get("goal") as string;
-    const goalMins = timeToMinutes(goal);
-
-    const existing = db.prepare("SELECT id FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, date);
-    if (existing) {
-      db.prepare(
-        "UPDATE PunchRecord SET punches = ?, workMins = ?, diffMins = ?, isOvertime = ?, goalMins = ? WHERE userId = ? AND date = ?"
-      ).run(punches, workMins, diffMins, isOvertime, goalMins, userId, date);
-    } else {
-      db.prepare(
-        "INSERT INTO PunchRecord (id, userId, date, punches, workMins, diffMins, isOvertime, goalMins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-      ).run(crypto.randomUUID(), userId, date, punches, workMins, diffMins, isOvertime, goalMins);
-    }
+    savePunchRecord(
+      userId,
+      date,
+      formData.get("punches") as string,
+      parseInt(formData.get("workMins") as string),
+      parseInt(formData.get("diffMins") as string),
+      formData.get("isOvertime") === "true" ? 1 : 0,
+      formData.get("goal") as string
+    );
     return { success: true };
   }
 
@@ -93,8 +75,6 @@ export default function Dashboard() {
   const [editPunches, setEditPunches] = useState<string[]>([]);
   const [editGoal, setEditGoal] = useState("08:00");
   const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
-
-  const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
 
   const monthStats = useMemo(() => {
     const monthStr = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -175,16 +155,10 @@ export default function Dashboard() {
         <div className="admin-header-new">
           <div className="header-row-1">
             <h1>Histórico de Ponto</h1>
-            <div className="month-nav-new">
-              <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-              <span className="month-label-new">
-                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-              </span>
-              <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
-            </div>
+            <MonthSelector currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
 
-          <div className="header-row-2" style={{ marginBottom: '-8px' }}>
+          <div className="header-row-2 dashboard-sub-header">
             <div className="toggle-container-new">
               <button 
                 onClick={() => setCalendarView('grid')} 
@@ -208,75 +182,64 @@ export default function Dashboard() {
         </div>
 
         {calendarView === 'grid' ? (
-          <div className="calendar-grid">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-              <div key={d} className="weekday-label">{d}</div>
-            ))}
-            {daysInMonth.map((d, i) => {
-              if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
+          <CalendarGrid
+            currentDate={currentDate}
+            selectedDateStr={selectedDateStr}
+            isModalOpen={isModalOpen}
+            onDayClick={handleDayClick}
+            renderDay={(d, isSelected) => {
               const hasData = history.find(h => h.date === d.dateStr);
-              const isSelected = selectedDateStr === d.dateStr;
               const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
               const isToday = d.dateStr === today;
               return (
-                <div key={d.dateStr} className={`calendar-day ${isSelected && isModalOpen ? 'selected' : ''} ${isToday ? 'today' : ''}`} onClick={() => handleDayClick(d.dateStr)}>
+                <div className={`calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}>
                   {d.day}
                   {hasData && <div className={`day-indicator ${hasData.isOvertime ? 'positive' : 'negative'}`} />}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
         ) : (
-          <div className="weekly-schedule-container">
-            {daysInMonth.filter(d => d !== null).map((wd: any) => {
+          <CalendarVertical
+            currentDate={currentDate}
+            onDayClick={handleDayClick}
+            renderRowContent={(wd) => {
               const hasData = history.find(h => h.date === wd.dateStr);
-              const dObj = new Date(wd.dateStr + 'T12:00:00');
-              const dayName = dObj.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
-
-              return (
-                <div key={wd.dateStr} className="schedule-day-row" onClick={() => handleDayClick(wd.dateStr)}>
-                  <div className="day-info-mini">
-                    <span className="day-num">{wd.day}</span>
-                    <span className="day-name">{dayName}</span>
-                  </div>
-                  
-                  <div className="punches-flow">
-                    {hasData ? (
-                      <div className="day-punches-wrapper">
-                        {hasData.punches?.map((punch, pIdx) => {
-                          if (pIdx % 2 !== 0) return null;
-                          const start = punch;
-                          const end = hasData.punches?.[pIdx + 1];
-                          
-                          return (
-                            <div key={pIdx} className="punch-card-mini">
-                              <div className="punch-item">
-                                <span className="p-label">Entrada</span>
-                                <span className="p-time">{start}</span>
-                              </div>
-                              <div className="punch-arrow">→</div>
-                              <div className="punch-item">
-                                <span className="p-label">Saída</span>
-                                <span className="p-time">{end || "--:--"}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
+              return hasData ? (
+                <div className="day-punches-wrapper">
+                  {hasData.punches?.map((punch, pIdx) => {
+                    if (pIdx % 2 !== 0) return null;
+                    const start = punch;
+                    const end = hasData.punches?.[pIdx + 1];
+                    
+                    return (
+                      <div key={pIdx} className="punch-card-mini">
+                        <div className="punch-item">
+                          <span className="p-label">Entrada</span>
+                          <span className="p-time">{start}</span>
+                        </div>
+                        <div className="punch-arrow">→</div>
+                        <div className="punch-item">
+                          <span className="p-label">Saída</span>
+                          <span className="p-time">{end || "--:--"}</span>
+                        </div>
                       </div>
-                    ) : (
-                      <span className="no-records-text">Sem registros</span>
-                    )}
-                  </div>
-
-                  {hasData && (
-                    <div className={`day-balance-tag ${hasData.isOvertime ? 'overtime' : 'missing'}`}>
-                      {hasData.diff}
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
+              ) : (
+                <span className="no-records-text">Sem registros</span>
               );
-            })}
-          </div>
+            }}
+            renderRowSide={(wd) => {
+              const hasData = history.find(h => h.date === wd.dateStr);
+              return hasData ? (
+                <div className={`day-balance-tag ${hasData.isOvertime ? 'overtime' : 'missing'}`}>
+                  {hasData.diff}
+                </div>
+              ) : null;
+            }}
+          />
         )}
       </div>
 
@@ -284,45 +247,30 @@ export default function Dashboard() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={new Date(selectedDateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-        icon={<CalendarIcon size={20} style={{ color: 'var(--primary)' }} />}
+        icon={<CalendarIcon size={20} color="var(--primary)" />}
         className="large"
       >
-        <div className="details-grid" style={{ gridTemplateColumns: '1fr', gap: '16px' }}>
+        <div className="details-grid dashboard-modal-grid">
           {isEditing ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ padding: '16px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '16px', border: '1px solid rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="dashboard-modal-edit-column">
+              <div className="dashboard-modal-goal-banner">
                 <div>
-                  <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>Meta deste Dia</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Alterar meta apenas para esta data</div>
+                  <div className="dashboard-modal-goal-title">Meta deste Dia</div>
+                  <div className="dashboard-modal-goal-desc">Alterar meta apenas para esta data</div>
                 </div>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <div className="dashboard-modal-goal-input-wrapper">
                   <input
                     type="text"
                     inputMode="numeric"
                     value={editGoal}
                     maxLength={5}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/[^0-9]/g, "");
-                      let h = digits.slice(0, 2); let m = digits.slice(2, 4);
-                      if (h.length === 2 && parseInt(h) > 23) h = "23";
-                      if (m.length === 2 && parseInt(m) > 59) m = "59";
-                      setEditGoal(digits.length > 2 ? h + ":" + m : h);
-                    }}
-                    style={{
-                      width: '100px',
-                      background: 'rgba(0,0,0,0.3)',
-                      border: '1px solid var(--glass-border)',
-                      borderRadius: '10px',
-                      padding: '6px 30px 6px 10px',
-                      color: 'white',
-                      fontWeight: '700',
-                      textAlign: 'center'
-                    }}
+                    onChange={(e) => setEditGoal(formatTimeInput(e.target.value))}
+                    className="dashboard-modal-goal-input"
                   />
-                  <Clock size={14} color="white" style={{ position: 'absolute', right: '10px', opacity: 0.6 }} />
+                  <Clock size={14} color="white" className="dashboard-modal-goal-input-icon" />
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="dashboard-modal-punches-list">
                 {(() => {
                   const pairsToShow = Math.max(1, Math.ceil(editPunches.length / 2) + (editPunches.length > 0 && editPunches.length % 2 === 0 && editPunches[editPunches.length - 1] !== "" ? 1 : 0));
 
@@ -348,57 +296,41 @@ export default function Dashboard() {
                     }
 
                     return (
-                      <div key={i} style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '16px', position: 'relative',
-                        background: isInv ? 'rgba(255, 68, 68, 0.05)' : 'rgba(255,255,255,0.03)',
-                        border: isInv ? '1px solid #ff4444' : '1px solid var(--glass-border)',
-                      }}>
+                      <div key={i} className={`dashboard-modal-punch-card ${isInv ? 'invalid' : ''}`}>
                         {isInv && (
-                          <span style={{ position: 'absolute', top: '-8px', right: '12px', background: '#ff4444', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                          <span className="dashboard-modal-error-badge">
                             {errorMsg}
                           </span>
                         )}
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
-                          <label style={{ fontSize: '0.6rem', color: isInv ? '#ff4444' : 'var(--text-muted)' }}>Entrada</label>
-                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <div className="dashboard-modal-input-col">
+                          <label className={`dashboard-modal-label ${isInv ? 'invalid' : ''}`}>Entrada</label>
+                          <div className="dashboard-modal-input-row">
                             <input
                               type="text"
                               inputMode="numeric"
                               placeholder="HH:MM"
                               value={sVal || ""}
                               maxLength={5}
-                              onChange={e => {
-                                const digits = e.target.value.replace(/[^0-9]/g, "");
-                                let h = digits.slice(0, 2); let m = digits.slice(2, 4);
-                                if (h.length === 2 && parseInt(h) > 23) h = "23";
-                                if (m.length === 2 && parseInt(m) > 59) m = "59";
-                                updatePunch(sIdx, digits.length > 2 ? h + ":" + m : h);
-                              }}
-                              style={{ borderColor: isInv ? '#ff4444' : '', textAlign: 'center', fontSize: '0.9rem' }}
+                              onChange={e => updatePunch(sIdx, formatTimeInput(e.target.value))}
+                              className={isInv ? 'invalid' : ''}
                             />
-                            {sVal && <button onClick={() => updatePunch(sIdx, "")} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#f87171', borderRadius: '6px', width: '24px', height: '24px', cursor: 'pointer' }}>✕</button>}
+                            {sVal && <button onClick={() => updatePunch(sIdx, "")} className="dashboard-modal-clear-btn">✕</button>}
                           </div>
                         </div>
-                        <ArrowRight size={12} style={{ marginTop: '16px', color: 'var(--text-muted)' }} />
-                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
-                          <label style={{ fontSize: '0.6rem', color: isInv ? '#ff4444' : 'var(--text-muted)' }}>Saída</label>
-                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <ArrowRight size={12} className="dashboard-modal-arrow" />
+                        <div className="dashboard-modal-input-col">
+                          <label className={`dashboard-modal-label ${isInv ? 'invalid' : ''}`}>Saída</label>
+                          <div className="dashboard-modal-input-row">
                             <input
                               type="text"
                               inputMode="numeric"
                               placeholder="HH:MM"
                               value={eVal || ""}
                               maxLength={5}
-                              onChange={e => {
-                                const digits = e.target.value.replace(/[^0-9]/g, "");
-                                let h = digits.slice(0, 2); let m = digits.slice(2, 4);
-                                if (h.length === 2 && parseInt(h) > 23) h = "23";
-                                if (m.length === 2 && parseInt(m) > 59) m = "59";
-                                updatePunch(eIdx, digits.length > 2 ? h + ":" + m : h);
-                              }}
-                              style={{ borderColor: isInv ? '#ff4444' : '', textAlign: 'center', fontSize: '0.9rem' }}
+                              onChange={e => updatePunch(eIdx, formatTimeInput(e.target.value))}
+                              className={isInv ? 'invalid' : ''}
                             />
-                            {eVal && <button onClick={() => updatePunch(eIdx, "")} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#f87171', borderRadius: '6px', width: '24px', height: '24px', cursor: 'pointer' }}>✕</button>}
+                            {eVal && <button onClick={() => updatePunch(eIdx, "")} className="dashboard-modal-clear-btn">✕</button>}
                           </div>
                         </div>
                       </div>
@@ -406,260 +338,34 @@ export default function Dashboard() {
                   });
                 })()}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="dashboard-modal-actions-grid">
                 <button className="btn-register" onClick={handleSaveEdit}>{fetcher.state !== "idle" ? <Loader2 size={16} className="animate-spin" /> : "Salvar"}</button>
-                <button className="btn-register" onClick={() => setIsEditing(false)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none' }}>Cancelar</button>
+                <button className="btn-register btn-cancel-glass" onClick={() => setIsEditing(false)}>Cancelar</button>
               </div>
             </div>
           ) : selectedDayData ? (
             <>
-              <div className="info-box" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--glass-border)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {selectedDayData.punches && selectedDayData.punches.length > 0 ? Array.from({ length: Math.ceil(selectedDayData.punches.length / 2) }).map((_, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: i < Math.ceil((selectedDayData.punches?.length || 0) / 2) - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: '8px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}><span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Entrada</span><span style={{ fontWeight: '700' }}>{selectedDayData.punches?.[i * 2]}</span></div>
-                      <div style={{ color: 'var(--text-muted)' }}>→</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}><span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Saída</span><span style={{ fontWeight: '700' }}>{selectedDayData.punches?.[i * 2 + 1] || "--:--"}</span></div>
-                    </div>
-                  )) : null}
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                <div className="info-box" style={{ background: 'rgba(255,255,255,0.05)' }}><span className="info-label"><Clock size={12} /> Meta</span><span className="info-value" style={{ fontSize: '0.9rem' }}>{selectedDayData.goal}</span></div>
-                <div className="info-box"><span className="info-label"><Timer size={12} /> Trabalhado</span><span className="info-value" style={{ fontSize: '0.9rem' }}>{selectedDayData.worked}</span></div>
-                <div className="info-box"><span className="info-label">{selectedDayData.isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo</span><span className={`info-value ${selectedDayData.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.9rem' }}>{selectedDayData.diff}</span></div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
-                <button className="btn-register" onClick={startEditing} style={{ padding: '14px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', boxShadow: 'none' }}><Edit3 size={16} /> Editar</button>
-                <button className="btn-register" style={{ padding: '14px', fontSize: '0.9rem', background: 'transparent', border: '1px dashed var(--error)', color: 'var(--error)', boxShadow: 'none' }} onClick={() => { if (confirm("Remover registro?")) { fetcher.submit({ _action: "delete", date: selectedDateStr }, { method: "post" }); setIsModalOpen(false); } }}><Trash2 size={16} /> Excluir</button>
+              <DayInfo
+                punches={selectedDayData.punches}
+                worked={selectedDayData.worked}
+                goal={selectedDayData.goal}
+                diff={selectedDayData.diff}
+                isOvertime={selectedDayData.isOvertime}
+                showGoal={true}
+              />
+              <div className="dashboard-modal-actions-grid-spaced">
+                <button className="btn-register btn-edit-glass" onClick={startEditing}><Edit3 size={16} /> Editar</button>
+                <button className="btn-register btn-delete-dashed" onClick={() => { if (confirm("Remover registro?")) { fetcher.submit({ _action: "delete", date: selectedDateStr }, { method: "post" }); setIsModalOpen(false); } }}><Trash2 size={16} /> Excluir</button>
               </div>
             </>
           ) : (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Sem registros.</p>
-              <button className="btn-register" onClick={startEditing} style={{ padding: '12px', fontSize: '0.9rem', width: 'auto', display: 'inline-flex', alignItems: 'center', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid var(--primary)', boxShadow: 'none' }}><Plus size={16} style={{ marginRight: '8px' }} /> Adicionar</button>
+            <div className="dashboard-modal-empty">
+              <p>Sem registros.</p>
+              <button className="btn-register btn-add-primary" onClick={startEditing}><Plus size={16} className="btn-icon-margin" /> Adicionar</button>
             </div>
           )}
         </div>
       </Modal>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .admin-header-new {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-        .header-row-1 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .header-row-2 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-        }
-        .month-nav-new {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .month-label-new {
-          font-weight: 700;
-          text-transform: capitalize;
-          min-width: 140px;
-          text-align: center;
-          font-size: 0.95rem;
-        }
-        .balance-mini-left {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 16px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          margin-top: 10px;
-        }
-        .balance-mini-left .label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          font-weight: 600;
-        }
-        .balance-mini-left .value {
-          font-size: 1rem;
-          font-weight: 800;
-        }
-
-        @media (max-width: 600px) {
-          .header-row-1 {
-            flex-direction: row;
-            justify-content: space-between;
-          }
-          .header-row-2 {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-          }
-          .month-label-new {
-            min-width: 110px;
-            font-size: 0.85rem;
-          }
-          h1 {
-            font-size: 1.4rem;
-          }
-        }
-
-        .toggle-container-new {
-          background: rgba(255, 255, 255, 0.03);
-          padding: 4px;
-          border-radius: 12px;
-          display: flex;
-          gap: 4px;
-          border: 1px solid var(--glass-border);
-        }
-        .view-toggle-new {
-          padding: 6px 14px;
-          border-radius: 9px;
-          font-size: 0.7rem;
-          font-weight: 700;
-          text-decoration: none;
-          color: var(--text-muted);
-          transition: all 0.2s;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-family: inherit;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex: 1;
-        }
-        .view-toggle-new.active {
-          background: var(--primary);
-          color: white;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-
-        /* List View Styles */
-        .weekly-schedule-container {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-top: 10px;
-        }
-        .schedule-day-row {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 20px;
-          padding: 16px;
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .schedule-day-row:hover {
-          background: rgba(255, 255, 255, 0.06);
-          transform: translateX(4px);
-        }
-        .day-info-mini {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          min-width: 50px;
-          padding-right: 20px;
-          border-right: 1px solid var(--glass-border);
-        }
-        .day-num {
-          font-size: 1.4rem;
-          font-weight: 800;
-          line-height: 1;
-        }
-        .day-name {
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          color: var(--text-muted);
-          font-weight: 700;
-        }
-        .punches-flow {
-          flex: 1;
-          display: flex;
-          gap: 12px;
-          overflow-x: auto;
-          padding-bottom: 4px;
-        }
-        .day-punches-wrapper {
-          display: flex;
-          gap: 12px;
-        }
-        .punch-card-mini {
-          background: rgba(0, 0, 0, 0.2);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          padding: 8px 16px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-width: fit-content;
-        }
-        .punch-item {
-          display: flex;
-          flex-direction: column;
-        }
-        .p-label {
-          font-size: 0.55rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-        }
-        .p-time {
-          font-size: 0.9rem;
-          font-weight: 700;
-        }
-        .punch-arrow {
-          color: var(--text-muted);
-          font-size: 0.8rem;
-          opacity: 0.5;
-        }
-        .day-balance-tag {
-          padding: 6px 12px;
-          border-radius: 10px;
-          font-size: 0.8rem;
-          font-weight: 800;
-          min-width: 70px;
-          text-align: center;
-        }
-        .no-records-text {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-          font-style: italic;
-        }
-
-        @media (max-width: 600px) {
-          .schedule-day-row {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-          }
-          .day-info-mini {
-            flex-direction: row;
-            justify-content: space-between;
-            border-right: none;
-            border-bottom: 1px solid var(--glass-border);
-            padding-right: 0;
-            padding-bottom: 8px;
-          }
-          .day-num { font-size: 1.1rem; }
-          .punches-flow {
-            flex-wrap: wrap;
-          }
-          .day-balance-tag {
-            align-self: flex-end;
-          }
-        }
-      `}} />
     </div>
   );
 }

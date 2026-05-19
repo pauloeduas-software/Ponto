@@ -1,0 +1,203 @@
+/* Estilos específicos da Tela Inicial (Home) */
+
+
+/* Home Refactored CSS Classes */
+.punches-section-wrapper {
+  margin-bottom: 32px;
+}
+
+.home-header-spacing {
+  margin-bottom: 24px;
+}
+
+.home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-header-badge {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.btn-settings-glass {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.btn-settings-glass:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btn-settings-glass.active {
+  color: var(--primary) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+}
+
+.home-goal-banner {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: fadeIn 0.3s ease;
+}
+
+.home-goal-banner-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.home-goal-banner-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.home-goal-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.home-goal-input {
+  width: 100px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 6px 30px 6px 10px;
+  color: white;
+  font-weight: 700;
+  text-align: center;
+}
+
+.home-goal-input-icon {
+  position: absolute;
+  right: 10px;
+  opacity: 0.6;
+}
+
+.punches-grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.punch-pair-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+}
+
+.punch-pair-row.invalid {
+  background: rgba(255, 68, 68, 0.05);
+  border: 1px solid #ff4444;
+}
+
+.punch-pair-error {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  background: #ff4444;
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.punch-pair-input-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+}
+
+.punch-pair-input-col label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.punch-pair-input-col.invalid label {
+  color: #ff4444;
+}
+
+.punch-pair-input-wrapper {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.punch-pair-input-wrapper input {
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.punch-pair-input-wrapper input.invalid {
+  border-color: #ff4444;
+}
+
+.punch-pair-clear-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.punch-pair-arrow {
+  margin-top: 16px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.punch-pair-arrow.invalid {
+  color: #ff4444;
+}
+
+.register-btn-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-register-home {
+  padding: 20px !important;
+  font-size: 1.2rem !important;
+  font-weight: bold !important;
+  background: var(--primary) !important;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3) !important;
+}
+
+.btn-register-home svg {
+  margin-right: 12px;
+}
+
+.result-item-border-top {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+

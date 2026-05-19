@@ -1,4 +1,4 @@
-interface StatCardProps {
+interface InfoCardProps {
   label: string;
   value: string;
   subValue?: string;
@@ -6,7 +6,7 @@ interface StatCardProps {
   type?: 'worked' | 'balance';
 }
 
-export function StatCard({ label, value, subValue, isPositive, type }: StatCardProps) {
+export function InfoCard({ label, value, subValue, isPositive, type }: InfoCardProps) {
   const valueClass = type === 'balance' ? (isPositive ? 'overtime' : 'missing') : '';
   
   return (
@@ -15,7 +15,7 @@ export function StatCard({ label, value, subValue, isPositive, type }: StatCardP
       <div className={`stat-value ${valueClass}`}>
         {value}
       </div>
-      {subValue && <span style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>{subValue}</span>}
+      {subValue && <span className="stat-sub">{subValue}</span>}
     </div>
   );
 }

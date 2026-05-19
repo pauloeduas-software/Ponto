@@ -1,0 +1,190 @@
+/* Shared Calendar & Detailed Weekly Schedule Styles */
+
+.weekly-schedule-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.schedule-day-row {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.schedule-day-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(4px);
+}
+
+.day-info-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 50px;
+  padding-right: 20px;
+  border-right: 1px solid var(--glass-border);
+}
+
+.day-num {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.day-name {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.punches-flow {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.day-punches-wrapper {
+  display: flex;
+  gap: 12px;
+}
+
+.punch-card-mini {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: fit-content;
+}
+
+.punch-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.p-label {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.p-time {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.punch-arrow {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+.day-balance-tag {
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  min-width: 70px;
+  text-align: center;
+}
+
+.no-records-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Avatar overlays / mini-avatars in calendars */
+.scheduled-avatars-new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap !important;
+  margin-top: 6px;
+}
+
+.avatar-mini-new {
+  border-radius: 50% !important;
+  border: 1px solid #0f172a;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  margin-left: -6px;
+  z-index: 1;
+}
+
+.avatar-mini-new:first-child {
+  margin-left: 0;
+}
+
+.avatar-mini-new img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-more-new {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: bold;
+  margin-left: 4px;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.team-day-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.summary-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Responsive / Mobile styles */
+@media (max-width: 600px) {
+  .schedule-day-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .day-info-mini {
+    flex-direction: row;
+    justify-content: space-between;
+    border-right: none;
+    border-bottom: 1px solid var(--glass-border);
+    padding-right: 0;
+    padding-bottom: 8px;
+  }
+  .day-num {
+    font-size: 1.1rem;
+  }
+  .punches-flow {
+    flex-wrap: wrap;
+  }
+  .day-balance-tag {
+    align-self: flex-end;
+  }
+  .avatar-mini-new {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+  }
+  .scheduled-avatars-new {
+    gap: 1px;
+  }
+}

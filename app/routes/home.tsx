@@ -7,54 +7,17 @@ import {
   Settings
 } from "lucide-react";
 import { useLoaderData, useFetcher, useRevalidator } from "react-router";
-import { timeToMinutes, minutesToTime, minutesToHHMM } from "../utils/time";
-import { db } from "../db.server";
-import { requireUserId, getUser } from "../session.server";
+import { timeToMinutes, minutesToTime, minutesToHHMM, formatTimeInput } from "../utils/time";
+import "../styles/home.css";
+import { getHomeData, saveHomePunchRecord } from "../services/homeService.server";
 
 export async function loader({ request }: { request: Request }) {
-  const userId = await requireUserId(request);
-  const user = await getUser(request);
-
-  const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
-
-  const record = db.prepare("SELECT * FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, dateStr) as any;
-
-  return {
-    user,
-    initialPunches: record ? JSON.parse(record.punches) : [],
-    initialGoal: record?.goalMins ? minutesToHHMM(record.goalMins) : (user as any).goal || "08:00",
-    dateStr
-  };
+  return getHomeData(request);
 }
 
 export async function action({ request }: { request: Request }) {
-  const userId = await requireUserId(request);
   const formData = await request.formData();
-
-  const date = formData.get("date") as string;
-  const punches = formData.get("punches") as string;
-  const workMins = parseInt(formData.get("workMins") as string);
-  const diffMins = parseInt(formData.get("diffMins") as string);
-  const isOvertime = formData.get("isOvertime") === "true" ? 1 : 0;
-
-  const goal = formData.get("goal") as string;
-  const goalMins = timeToMinutes(goal);
-
-  // Manual Upsert for SQLite
-  const existing = db.prepare("SELECT id FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, date);
-  if (existing) {
-    db.prepare(
-      "UPDATE PunchRecord SET punches = ?, workMins = ?, diffMins = ?, isOvertime = ?, goalMins = ? WHERE userId = ? AND date = ?"
-    ).run(punches, workMins, diffMins, isOvertime, goalMins, userId, date);
-  } else {
-    db.prepare(
-      "INSERT INTO PunchRecord (id, userId, date, punches, workMins, diffMins, isOvertime, goalMins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(crypto.randomUUID(), userId, date, punches, workMins, diffMins, isOvertime, goalMins);
-  }
-
-  // Atualiza a meta padrão do usuário para que os próximos dias herdem esse valor
-  db.prepare("UPDATE User SET goal = ? WHERE id = ?").run(goal, userId);
-
+  await saveHomePunchRecord(request, formData);
   return { success: true };
 }
 
@@ -206,27 +169,17 @@ export default function Home() {
   return (
     <div className="container">
       <div className="card">
-        <div className="punches-section" style={{ marginBottom: '32px' }}>
-          <div className="admin-header-new" style={{ marginBottom: '24px' }}>
+        <div className="punches-section punches-section-wrapper">
+          <div className="admin-header-new home-header-spacing">
             <div className="header-row-1">
               <h1>Linha do Tempo</h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+              <div className="home-header-actions">
+                <span className="home-header-badge">
                   {fetcher.state !== "idle" ? <Loader2 size={12} className="animate-spin" /> : `${punches.filter(p => p !== "").length} batidas hoje`}
                 </span>
                 <button 
                   onClick={() => setShowGoalInput(!showGoalInput)}
-                  style={{ 
-                    background: 'rgba(255,255,255,0.03)', 
-                    border: '1px solid var(--glass-border)', 
-                    color: showGoalInput ? 'var(--primary)' : 'var(--text-muted)', 
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '6px',
-                    borderRadius: '10px',
-                    transition: 'all 0.2s'
-                  }}
+                  className={`btn-settings-glass ${showGoalInput ? 'active' : ''}`}
                   title="Configurar Meta"
                 >
                   <Settings size={14} />
@@ -236,51 +189,26 @@ export default function Home() {
           </div>
 
           {showGoalInput && (
-            <div style={{ 
-              marginBottom: '20px', 
-              padding: '16px', 
-              background: 'rgba(99, 102, 241, 0.05)', 
-              borderRadius: '16px', 
-              border: '1px solid rgba(99, 102, 241, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              animation: 'fadeIn 0.3s ease'
-            }}>
-              <div>
-                <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>Meta do Dia</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Apenas para hoje</div>
+            <div className="home-goal-banner">
+              <div className="home-goal-banner-title-container">
+                <div className="home-goal-banner-title">Meta do Dia</div>
+                <div className="home-goal-banner-desc">Apenas para hoje</div>
               </div>
-               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                 <input 
-                   type="text"
-                   inputMode="numeric"
-                   value={dailyGoal}
-                   maxLength={5}
-                   onChange={(e) => {
-                     const digits = e.target.value.replace(/[^0-9]/g, "");
-                     let h = digits.slice(0, 2); let m = digits.slice(2, 4);
-                     if (h.length === 2 && parseInt(h) > 23) h = "23";
-                     if (m.length === 2 && parseInt(m) > 59) m = "59";
-                     setDailyGoal(digits.length > 2 ? h + ":" + m : h);
-                   }}
-                   style={{
-                     width: '100px',
-                     background: 'rgba(0,0,0,0.3)',
-                     border: '1px solid var(--glass-border)',
-                     borderRadius: '10px',
-                     padding: '6px 30px 6px 10px', // Espaço para o ícone na direita
-                     color: 'white',
-                     fontWeight: '700',
-                     textAlign: 'center'
-                   }}
-                 />
-                 <Clock size={14} color="white" style={{ position: 'absolute', right: '10px', opacity: 0.6 }} />
-               </div>
-             </div>
+              <div className="home-goal-input-container">
+                <input 
+                  type="text"
+                  inputMode="numeric"
+                  value={dailyGoal}
+                  maxLength={5}
+                  onChange={(e) => setDailyGoal(formatTimeInput(e.target.value))}
+                  className="home-goal-input"
+                />
+                <Clock size={14} color="white" className="home-goal-input-icon" />
+              </div>
+            </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="punches-grid-container">
             {(() => {
               // Filtrar punches vazios no final para determinar quantas linhas mostrar
               const filledPunches = punches.filter((p, i) => {
@@ -325,72 +253,46 @@ export default function Home() {
                 }
 
               return (
-                <div key={pairIndex} style={{
-                  display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '16px', position: 'relative',
-                  background: isInvalid ? 'rgba(255, 68, 68, 0.05)' : 'rgba(255,255,255,0.03)',
-                  border: isInvalid ? '1px solid #ff4444' : '1px solid var(--glass-border)',
-                }}>
+                <div key={pairIndex} className={`punch-pair-row ${isInvalid ? 'invalid' : ''}`}>
                   {isInvalid && (
-                    <span style={{ position: 'absolute', top: '-8px', right: '12px', background: '#ff4444', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                    <span className="punch-pair-error">
                       {errorMessage}
                     </span>
                   )}
-                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
-                    <label style={{ fontSize: '0.6rem', color: isInvalid ? '#ff4444' : 'var(--text-muted)' }}>Entrada</label>
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  <div className={`punch-pair-input-col ${isInvalid ? 'invalid' : ''}`}>
+                    <label>Entrada</label>
+                    <div className="punch-pair-input-wrapper">
                       <input
                         type="text"
                         inputMode="numeric"
                         placeholder="HH:MM"
                         value={entryVal || ""}
                         maxLength={5}
-                        onChange={e => {
-                          const digits = e.target.value.replace(/[^0-9]/g, "");
-                          let h = digits.slice(0, 2);
-                          let m = digits.slice(2, 4);
-
-                          // Validação de horas (máx 23)
-                          if (h.length === 2 && parseInt(h) > 23) h = "23";
-                          // Validação de minutos (máx 59)
-                          if (m.length === 2 && parseInt(m) > 59) m = "59";
-
-                          const v = digits.length > 2 ? h + ":" + m : h;
-                          updatePunch(entryIdx, v);
-                        }}
-                        style={{ borderColor: isInvalid ? '#ff4444' : '', textAlign: 'center', letterSpacing: '2px' }}
+                        onChange={e => updatePunch(entryIdx, formatTimeInput(e.target.value))}
+                        className={isInvalid ? 'invalid' : ''}
                       />
                       {entryVal && (
-                        <button onClick={() => updatePunch(entryIdx, "")} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: '8px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                        <button onClick={() => updatePunch(entryIdx, "")} className="punch-pair-clear-btn">
                           ✕
                         </button>
                       )}
                     </div>
                   </div>
-                  <ArrowRight size={14} style={{ marginTop: '16px', color: isInvalid ? '#ff4444' : 'var(--text-muted)', flexShrink: 0 }} />
-                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '4px' }}>
-                    <label style={{ fontSize: '0.6rem', color: isInvalid ? '#ff4444' : 'var(--text-muted)' }}>Saída</label>
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  <ArrowRight size={14} className={`punch-pair-arrow ${isInvalid ? 'invalid' : ''}`} />
+                  <div className={`punch-pair-input-col ${isInvalid ? 'invalid' : ''}`}>
+                    <label>Saída</label>
+                    <div className="punch-pair-input-wrapper">
                       <input
                         type="text"
                         inputMode="numeric"
                         placeholder="HH:MM"
                         value={exitVal || ""}
                         maxLength={5}
-                        onChange={e => {
-                          const digits = e.target.value.replace(/[^0-9]/g, "");
-                          let h = digits.slice(0, 2);
-                          let m = digits.slice(2, 4);
-
-                          if (h.length === 2 && parseInt(h) > 23) h = "23";
-                          if (m.length === 2 && parseInt(m) > 59) m = "59";
-
-                          const v = digits.length > 2 ? h + ":" + m : h;
-                          updatePunch(exitIdx, v);
-                        }}
-                        style={{ borderColor: isInvalid ? '#ff4444' : '', textAlign: 'center', letterSpacing: '2px' }}
+                        onChange={e => updatePunch(exitIdx, formatTimeInput(e.target.value))}
+                        className={isInvalid ? 'invalid' : ''}
                       />
                       {exitVal && (
-                        <button onClick={() => updatePunch(exitIdx, "")} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: '8px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                        <button onClick={() => updatePunch(exitIdx, "")} className="punch-pair-clear-btn">
                           ✕
                         </button>
                       )}
@@ -402,12 +304,12 @@ export default function Home() {
           })()}
         </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
+          <div className="register-btn-container">
             {(() => {
               const filledPunches = punches.filter(p => p !== "");
               const isEntry = filledPunches.length % 2 === 0;
               return (
-                <button className="btn-register" onClick={() => {
+                <button className="btn-register btn-register-home" onClick={() => {
                   const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                   const current = [...punches];
                   
@@ -421,8 +323,8 @@ export default function Home() {
                   }
                   
                   updateAndSavePunches(current);
-                }} style={{ padding: '20px', fontSize: '1.2rem', fontWeight: 'bold', background: 'var(--primary)', boxShadow: '0 8px 32px rgba(99, 102, 241, 0.3)' }}>
-                  <Clock size={24} style={{ marginRight: '12px' }} /> {isEntry ? "Registrar Entrada" : "Registrar Saída"}
+                }}>
+                  <Clock size={24} /> {isEntry ? "Registrar Entrada" : "Registrar Saída"}
                 </button>
               );
             })()}
@@ -433,7 +335,7 @@ export default function Home() {
           <div className="result-item"><span className="result-label">Total Trabalhado</span><span className="result-value">{currentResults.totalWorked}</span></div>
           
           {currentResults.firstEntryMins !== -1 && (
-            <div className="result-item" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px', marginTop: '8px' }}>
+            <div className="result-item result-item-border-top">
               <span className="result-label">Sugestão de Saída</span>
               <span className="result-value">
                 {minutesToHHMM(currentResults.firstEntryMins + timeToMinutes(dailyGoal) + currentResults.totalBreakMins)}
@@ -444,30 +346,6 @@ export default function Home() {
           <div className="result-item"><span className="result-label">Saldo do Dia</span><span className={`result-value ${currentResults.isOvertime ? "overtime" : "missing"}`}>{currentResults.overtime}</span></div>
         </div>
       </div>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .admin-header-new {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        .header-row-1 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        h1 {
-          color: #fff;
-          font-size: 1.8rem;
-          margin: 0;
-        }
-
-        @media (max-width: 600px) {
-          h1 {
-            font-size: 1.4rem;
-          }
-        }
-      `}} />
     </div>
   );
 }

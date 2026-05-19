@@ -119,3 +119,10 @@ try {
 db.exec("CREATE INDEX IF NOT EXISTS idx_punch_date ON PunchRecord(date)");
 db.exec("CREATE INDEX IF NOT EXISTS idx_shift_date ON Shift(date)");
 
+// Limpeza automática de avatares antigos gigantescos para restaurar a performance instantânea das trocas de página
+try {
+  db.exec("UPDATE User SET avatarUrl = NULL WHERE avatarUrl IS NOT NULL AND LENGTH(avatarUrl) > 50000");
+} catch (e) {
+  // Ignora se der erro
+}
+

@@ -488,6 +488,11 @@ input:focus {
   border: 1px solid var(--glass-border);
 }
 
+.stat-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -836,3 +841,244 @@ input:focus {
   to { transform: rotate(360deg); }
 }
 
+/* DayDetails Component Styles */
+.day-details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.day-details-punches {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.day-details-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.day-details-row:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.day-details-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.day-details-col.align-right {
+  align-items: flex-end;
+}
+
+.day-details-meta {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.day-details-value {
+  font-weight: 700;
+}
+
+.day-details-arrow {
+  color: var(--text-muted);
+}
+
+.day-details-empty {
+  text-align: center;
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* =========================================================
+   Componentes Compartilhados — usados em múltiplas páginas
+   ========================================================= */
+
+/* Cabeçalho padrão de página */
+.admin-header-new {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.header-row-1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header-row-2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Navegação de Mês (MonthSelector) */
+.month-nav-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.month-label-new {
+  font-weight: 700;
+  text-transform: capitalize;
+  min-width: 140px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+/* Toggle de visualização (Grade / Detalhado) */
+.toggles-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.toggle-container-new {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px;
+  border-radius: 12px;
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--glass-border);
+}
+.view-toggle-new {
+  padding: 6px 14px;
+  border-radius: 9px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.view-toggle-new.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Saldo do mês em linha */
+.balance-mini-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  margin-top: 10px;
+}
+.balance-mini-left .label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.balance-mini-left .value {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* Select customizado */
+.custom-select {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 12px 16px;
+  color: white;
+  font-size: 0.9rem;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+.custom-select:focus {
+  border-color: var(--primary);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Grid de filtros */
+.filters-grid-new {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Utilitários de layout */
+.label-icon-flex {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.input-group-no-margin {
+  margin-bottom: 0 !important;
+}
+
+/* Responsivo compartilhado */
+@media (max-width: 600px) {
+  .header-row-1 {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .header-row-2 {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .toggles-group {
+    justify-content: space-between;
+  }
+  .toggle-container-new {
+    flex: 1;
+  }
+  .view-toggle-new {
+    flex: 1;
+    text-align: center;
+  }
+  .month-label-new {
+    min-width: 110px;
+    font-size: 0.85rem;
+  }
+  .filters-grid-new {
+    grid-template-columns: 1fr;
+  }
+  h1 {
+    font-size: 1.4rem;
+  }
+}
+
+/* Barra de progresso global de navegação */
+.global-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  transition: transform 200ms ease-in-out, opacity 200ms;
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--primary) 0%, #818cf8 100%);
+  box-shadow: 0 0 8px var(--primary);
+  pointer-events: none;
+}
+.global-progress-bar.active {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+/* Customização do avatar do menu lateral */
+.sidebar-avatar {
+  border-radius: 8px !important;
+}

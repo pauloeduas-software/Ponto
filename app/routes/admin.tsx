@@ -16,11 +16,18 @@ import {
 import { useLoaderData } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
 import { minutesToHHMM } from "../utils/time";
-import { getDaysInMonth } from "../utils/calendar";
 import { Modal } from "../components/Modal";
-import { db } from "../db.server";
-import { requireUserId, getUser } from "../session.server";
+import { CalendarGrid } from "../components/CalendarGrid";
+import { CalendarVertical } from "../components/CalendarVertical";
+import { MonthSelector } from "../components/MonthSelector";
+import { AvatarGroup } from "../components/AvatarGroup";
+import { Avatar } from "../components/Avatar";
+import { DayInfo } from "../components/DayInfo";
+import "../styles/calendar.css";
+import "../styles/admin.css";
+import { requireUserId, getUser } from "../services/session.server";
 import { type SavedDay } from "../types";
+import { getAdminData } from "../services/adminService.server";
 
 // Dados do admin são somente-leitura nessa rota: só rebusca ao navegar para ela
 export const shouldRevalidate: ShouldRevalidateFunction = ({ currentUrl, nextUrl }) => {
@@ -31,100 +38,8 @@ export async function loader({ request }: { request: Request }) {
   await requireUserId(request);
   const user = await getUser(request) as any;
   const url = new URL(request.url);
-  const viewParam = url.searchParams.get("view") || "team";
   const selectedManagerTeamId = url.searchParams.get("teamFilter") || null;
-
-  // Admins e Managers (via UserTeam) podem acessar
-  const isAdmin = user.role === "admin";
-  const managerTeams = (user.userTeams || []).filter((ut: any) => ut.role === 'manager');
-  const isManager = managerTeams.length > 0;
-
-  if (!isAdmin && !isManager) {
-    throw new Response("Acesso negado", { status: 403 });
-  }
-
-  // Se for Admin e pedir visão de equipe, ou se for Manager (que sempre vê equipe)
-  const isTeamView = isAdmin ? (viewParam === "team") : true;
-
-  let employeesQuery = `
-    SELECT u.id, u.name, u.role, u.avatarUrl, u.teamId, t.name as teamName 
-    FROM User u 
-    LEFT JOIN Team t ON u.teamId = t.id
-  `;
-  let recordsQuery = "SELECT * FROM PunchRecord";
-  let params: any[] = [];
-  let teamName = "Geral";
-
-  const activeTeamId = selectedManagerTeamId || managerTeams[0]?.teamId || user.teamId || (user.userTeams || [])[0]?.teamId || null;
-
-  if (isAdmin) {
-    // Admin em visão global: sem filtro, sempre traz todos
-  } else if (activeTeamId) {
-    // Visão de equipe (Manager com equipe selecionada)
-    employeesQuery = `
-      SELECT DISTINCT u.id, u.name, u.role, u.avatarUrl, u.teamId, t.name as teamName
-      FROM User u
-      LEFT JOIN UserTeam ut ON u.id = ut.userId
-      LEFT JOIN Team t ON ut.teamId = t.id OR u.teamId = t.id
-      WHERE ut.teamId = ? OR u.teamId = ?
-    `;
-    recordsQuery = `
-      SELECT DISTINCT r.* FROM PunchRecord r
-      JOIN User u ON r.userId = u.id
-      LEFT JOIN UserTeam ut ON r.userId = ut.userId
-      WHERE ut.teamId = ? OR u.teamId = ?
-    `;
-    params = [activeTeamId, activeTeamId];
-    const team = db.prepare("SELECT name FROM Team WHERE id = ?").get(activeTeamId) as any;
-    teamName = team?.name || "Equipe";
-  } else {
-    // Manager sem nenhuma equipe vinculada
-    employeesQuery += " WHERE 1=0";
-    recordsQuery += " WHERE 1=0";
-    teamName = "Sem Equipe";
-  }
-
-  const employees = db.prepare(employeesQuery).all(...params) as any[];
-
-  // Attach userTeams
-  const allUserTeams = db.prepare(`
-    SELECT ut.userId, ut.teamId, ut.role, t.name as teamName
-    FROM UserTeam ut
-    JOIN Team t ON ut.teamId = t.id
-  `).all() as any[];
-  
-  const userTeamsMap: Record<string, any[]> = {};
-  for (const link of allUserTeams) {
-    if (!userTeamsMap[link.userId]) userTeamsMap[link.userId] = [];
-    userTeamsMap[link.userId].push(link);
-  }
-
-  employees.forEach(emp => {
-    emp.userTeams = userTeamsMap[emp.id] || [];
-  });
-
-  const allRecords = db.prepare(recordsQuery).all(...params) as any[];
-
-  const historyData: Record<string, SavedDay[]> = {};
-  allRecords.forEach(r => {
-    if (!historyData[r.userId]) historyData[r.userId] = [];
-    historyData[r.userId].push({
-      date: r.date,
-      punches: JSON.parse(r.punches),
-      workMins: r.workMins,
-      diffMins: r.diffMins,
-      isOvertime: r.isOvertime === 1,
-      goalMins: r.goalMins || 480,
-      goal: minutesToHHMM(r.goalMins || 480),
-      worked: minutesToHHMM(r.workMins),
-      diff: minutesToHHMM(Math.abs(r.diffMins))
-    });
-  });
-
-  const teams = db.prepare("SELECT * FROM Team ORDER BY name").all() as any[];
-  const activeManagerTeamId = isManager ? (selectedManagerTeamId || managerTeams[0]?.teamId || null) : null;
-
-  return { user, employees, historyData, teamName, teams, managerTeams, isManager, isAdmin, activeManagerTeamId };
+  return getAdminData(user, selectedManagerTeamId);
 }
 
 export default function Admin() {
@@ -138,8 +53,6 @@ export default function Admin() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTeamBalanceModalOpen, setIsTeamBalanceModalOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
-
-  const daysInMonth = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
 
   const changeMonth = (offset: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
@@ -204,17 +117,11 @@ export default function Admin() {
         <div className="admin-header-new">
           <div className="header-row-1">
             <h1>Relatórios</h1>
-            <div className="month-nav-new">
-              <button className="icon-btn" onClick={() => changeMonth(-1)}><ChevronLeft size={18} /></button>
-              <span className="month-label-new">
-                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-              </span>
-              <button className="icon-btn" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
-            </div>
+            <MonthSelector currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
 
           <div className="header-row-2">
-            <div className="toggles-group" style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+            <div className="toggles-group admin-header-actions">
               <div className="toggle-container-new">
                 <button
                   onClick={() => setCalendarView('grid')}
@@ -236,12 +143,12 @@ export default function Admin() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '24px' }}>
+        <div className="filters-wrapper-new">
           <div className="filters-grid-new">
             {(isAdmin || managerTeams.length > 0) && (
-              <div className="input-group" style={{ marginBottom: 0 }}>
+              <div className="input-group input-group-no-margin">
                 <div className="label-container">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <label className="label-icon-flex">
                     <Layers size={12} /> Filtrar Equipe
                   </label>
                 </div>
@@ -275,9 +182,9 @@ export default function Admin() {
               </div>
             )}
 
-            <div className="input-group" style={{ marginBottom: 0 }}>
+            <div className="input-group input-group-no-margin">
               <div className="label-container">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <label className="label-icon-flex">
                   <Filter size={12} /> Filtrar Colaborador
                 </label>
               </div>
@@ -294,7 +201,7 @@ export default function Admin() {
             </div>
           </div>
           {selectedUserId !== "todos" && selectedUserBalances && (
-            <div className="balance-mini-left" style={{ marginTop: '16px' }}>
+            <div className="balance-mini-left balance-left-spaced">
               <span className="label">Saldo do Mês:</span>
               <span className={`value ${selectedUserBalances.monthly >= 0 ? 'overtime' : 'missing'}`}>
                 {minutesToHHMM(Math.abs(selectedUserBalances.monthly))}
@@ -304,63 +211,23 @@ export default function Admin() {
         </div>
 
         {calendarView === 'grid' ? (
-          <div className="calendar-grid">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-              <div key={d} className="weekday-label">{d}</div>
-            ))}
-            {daysInMonth.map((d, i) => {
-              if (!d) return <div key={`empty-${i}`} className="calendar-day other-month" />;
-              const isSelected = selectedDateStr === d.dateStr;
+          <CalendarGrid
+            currentDate={currentDate}
+            selectedDateStr={selectedDateStr}
+            isModalOpen={isModalOpen}
+            onDayClick={handleDayClick}
+            renderDay={(d, isSelected) => {
               const recCount = recordCount(d.dateStr);
-
               return (
-                <div
-                  key={d.dateStr}
-                  className={`calendar-day ${isSelected && isModalOpen ? 'selected' : ''}`}
-                  onClick={() => handleDayClick(d.dateStr)}
-                >
+                <div className={`calendar-day ${isSelected ? 'selected' : ''}`}>
                   {d.day}
                   {selectedUserId === "todos" ? (
-                    recordCount(d.dateStr) > 0 && (
-                      <div style={{
-                        display: 'flex',
-                        gap: '2px',
-                        marginTop: '4px',
-                        justifyContent: 'center',
-                        flexWrap: 'wrap'
-                      }}>
-                        {filteredEmployees
-                          .filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))
-                          .slice(0, 2)
-                          .map((emp, idx) => (
-                            <div key={idx} style={{
-                              width: '16px',
-                              height: '16px',
-                              borderRadius: '4px',
-                              background: 'var(--primary)',
-                              overflow: 'hidden',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              border: '1px solid #0f172a',
-                            }}>
-                              {emp.avatarUrl
-                                ? <img src={emp.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                : <UserIcon size={10} color="white" />
-                              }
-                            </div>
-                          ))}
-                        {recordCount(d.dateStr) > 2 && (
-                          <div style={{
-                            fontSize: '0.55rem',
-                            color: 'var(--text-muted)',
-                            fontWeight: 'bold',
-                            lineHeight: '16px'
-                          }}>
-                            +{recordCount(d.dateStr) - 2}
-                          </div>
-                        )}
-                      </div>
+                    recCount > 0 && (
+                      <AvatarGroup
+                        users={filteredEmployees.filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))}
+                        max={3}
+                        size={22}
+                      />
                     )
                   ) : (
                     (historyData[selectedUserId] || []).some(h => h.date === d.dateStr) && (
@@ -369,97 +236,84 @@ export default function Admin() {
                   )}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
         ) : (
-          <div className="weekly-schedule-container">
-            {daysInMonth.filter(d => d !== null).map((wd: any) => {
-              // Buscar todos os registros do dia para a equipe filtrada
+          <CalendarVertical
+            currentDate={currentDate}
+            onDayClick={handleDayClick}
+            renderRowContent={(wd) => {
               const dayGlobalRecords = filteredEmployees.map(emp => {
                 const record = (historyData[emp.id] || []).find(h => h.date === wd.dateStr);
                 return record ? { emp, record } : null;
               }).filter(r => r !== null) as { emp: any, record: SavedDay }[];
 
-              const dayBalance = selectedUserId === "todos"
-                ? 0
-                : (dayGlobalRecords.find(r => r.emp.id === selectedUserId)?.record.diffMins || 0);
+              return selectedUserId === "todos" ? (
+                dayGlobalRecords.length > 0 ? (
+                  <div className="team-day-summary">
+                    <AvatarGroup
+                      users={dayGlobalRecords.map(r => r.emp)}
+                      max={5}
+                      size={24}
+                      className="avatar-stack-left-aligned"
+                    />
+                    <span className="summary-text">
+                      {dayGlobalRecords.length} colaborador{dayGlobalRecords.length > 1 ? 'es' : ''} registrou{dayGlobalRecords.length > 1 ? 'am' : ''} ponto
+                    </span>
+                  </div>
+                ) : (
+                  <span className="no-records-text">Sem registros</span>
+                )
+              ) : (
+                dayGlobalRecords.some(r => r.emp.id === selectedUserId) ? (
+                  dayGlobalRecords
+                    .filter(r => r.emp.id === selectedUserId)
+                    .map((r, idx) => (
+                      <div key={idx} className="day-punches-wrapper">
+                        {r.record.punches?.map((punch, pIdx) => {
+                          if (pIdx % 2 !== 0) return null;
+                          const start = punch;
+                          const end = r.record.punches?.[pIdx + 1];
 
-              const dObj = new Date(wd.dateStr + 'T12:00:00');
-              const dayName = dObj.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+                          return (
+                            <div key={pIdx} className="punch-card-mini">
+                              <div className="punch-item">
+                                <span className="p-label">Entrada</span>
+                                <span className="p-time">{start}</span>
+                              </div>
+                              <div className="punch-arrow">→</div>
+                              <div className="punch-item">
+                                <span className="p-label">Saída</span>
+                                <span className="p-time">{end || "--:--"}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))
+                ) : (
+                  <span className="no-records-text">Sem registros</span>
+                )
+              );
+            }}
+            renderRowSide={(wd) => {
+              if (selectedUserId === "todos") return null;
+              const dayGlobalRecords = filteredEmployees.map(emp => {
+                const record = (historyData[emp.id] || []).find(h => h.date === wd.dateStr);
+                return record ? { emp, record } : null;
+              }).filter(r => r !== null) as { emp: any, record: SavedDay }[];
+
+              const userRecord = dayGlobalRecords.find(r => r.emp.id === selectedUserId);
+              if (!userRecord) return null;
+              const dayBalance = userRecord.record.diffMins || 0;
 
               return (
-                <div key={wd.dateStr} className="schedule-day-row" onClick={() => handleDayClick(wd.dateStr)}>
-                  <div className="day-info-mini">
-                    <span className="day-num">{wd.day}</span>
-                    <span className="day-name">{dayName}</span>
-                  </div>
-
-                  <div className="punches-flow">
-                    {selectedUserId === "todos" ? (
-                      dayGlobalRecords.length > 0 ? (
-                        <div className="team-day-summary">
-                          <div className="scheduled-avatars-new" style={{ justifyContent: 'flex-start' }}>
-                            {dayGlobalRecords.slice(0, 5).map((r, idx) => (
-                              <div key={idx} className="avatar-mini-new" title={r.emp.name}>
-                                {r.emp.avatarUrl
-                                  ? <img src={r.emp.avatarUrl} alt="" />
-                                  : <UserIcon size={10} color="white" />
-                                }
-                              </div>
-                            ))}
-                            {dayGlobalRecords.length > 5 && (
-                              <div className="avatar-more-new">+{dayGlobalRecords.length - 5}</div>
-                            )}
-                          </div>
-                          <span className="summary-text">
-                            {dayGlobalRecords.length} colaborador{dayGlobalRecords.length > 1 ? 'es' : ''} registrou{dayGlobalRecords.length > 1 ? 'am' : ''} ponto
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="no-records-text">Sem registros</span>
-                      )
-                    ) : (
-                      dayGlobalRecords.some(r => r.emp.id === selectedUserId) ? (
-                        dayGlobalRecords
-                          .filter(r => r.emp.id === selectedUserId)
-                          .map((r, idx) => (
-                            <div key={idx} className="day-punches-wrapper">
-                              {r.record.punches?.map((punch, pIdx) => {
-                                if (pIdx % 2 !== 0) return null;
-                                const start = punch;
-                                const end = r.record.punches?.[pIdx + 1];
-
-                                return (
-                                  <div key={pIdx} className="punch-card-mini">
-                                    <div className="punch-item">
-                                      <span className="p-label">Entrada</span>
-                                      <span className="p-time">{start}</span>
-                                    </div>
-                                    <div className="punch-arrow">→</div>
-                                    <div className="punch-item">
-                                      <span className="p-label">Saída</span>
-                                      <span className="p-time">{end || "--:--"}</span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ))
-                      ) : (
-                        <span className="no-records-text">Sem registros</span>
-                      )
-                    )}
-                  </div>
-
-                  {selectedUserId !== "todos" && dayGlobalRecords.some(r => r.emp.id === selectedUserId) && (
-                    <div className={`day-balance-tag ${dayBalance >= 0 ? 'overtime' : 'missing'}`}>
-                      {minutesToHHMM(Math.abs(dayBalance))}
-                    </div>
-                  )}
+                <div className={`day-balance-tag ${dayBalance >= 0 ? 'overtime' : 'missing'}`}>
+                  {minutesToHHMM(Math.abs(dayBalance))}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
         )}
       </div>
 
@@ -473,84 +327,63 @@ export default function Admin() {
       >
         {selectedUserId === "todos" ? (
           selectedDayGlobalData && selectedDayGlobalData.length > 0 ? (
-            <div className="history-list" style={{ paddingRight: '4px' }}>
+            <div className="history-list admin-history-scroll">
               {selectedDayGlobalData.map(record => (
-                <div key={record.user.id} style={{
-                  padding: '16px',
-                  marginBottom: '12px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid var(--glass-border)',
-                  borderRadius: '16px'
-                }}>
+                <div key={record.user.id} className="admin-history-card">
                   {/* Cabeçalho do funcionário */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <div style={{
-                      width: '40px', height: '40px', borderRadius: '10px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'var(--primary)', overflow: 'hidden', flexShrink: 0
-                    }}>
-                      {record.user.avatarUrl
-                        ? <img src={record.user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <UserIcon color="white" size={18} />
-                      }
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{record.user.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  <div className="admin-history-card-header">
+                    <Avatar
+                      src={record.user.avatarUrl}
+                      name={record.user.name}
+                      size={40}
+                      className="admin-history-avatar"
+                    />
+                    <div className="emp-details">
+                      <div className="emp-details-name">{record.user.name}</div>
+                      <div className="emp-details-sub">
                         {record.user.teamName || "Sem Equipe"}
                       </div>
                     </div>
                   </div>
 
                   {/* Batidas do dia */}
-                  <div style={{
-                    padding: '10px 12px',
-                    background: 'rgba(0,0,0,0.2)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: '10px',
-                    marginBottom: '10px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px'
-                  }}>
+                  <div className="admin-summary-punches">
                     {record.data.punches && record.data.punches.length > 0
                       ? Array.from({ length: Math.ceil((record.data.punches as string[]).length / 2) }).map((_, i) => (
-                        <div key={i} style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          borderBottom: i < Math.ceil((record.data.punches as string[]).length / 2) - 1
-                            ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                          paddingBottom: '6px'
-                        }}>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Entrada</span>
-                            <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{(record.data.punches as string[])[i * 2]}</span>
+                        <div
+                          key={i}
+                          className={`admin-summary-punch-row ${
+                            i < Math.ceil((record.data.punches as string[]).length / 2) - 1 ? "has-border" : ""
+                          }`}
+                        >
+                          <div className="admin-summary-col">
+                            <span className="admin-summary-meta">Entrada</span>
+                            <span className="admin-summary-time">{(record.data.punches as string[])[i * 2]}</span>
                           </div>
-                          <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>→</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                            <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Saída</span>
-                            <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{(record.data.punches as string[])[i * 2 + 1] || "--:--"}</span>
+                          <div className="admin-summary-arrow">→</div>
+                          <div className="admin-summary-col align-right">
+                            <span className="admin-summary-meta">Saída</span>
+                            <span className="admin-summary-time">{(record.data.punches as string[])[i * 2 + 1] || "--:--"}</span>
                           </div>
                         </div>
                       ))
-                      : <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sem batidas registradas.</span>
+                      : <span className="admin-summary-meta">Sem batidas registradas.</span>
                     }
                   </div>
 
                   {/* Totais */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                    <div className="info-box" style={{ padding: '10px' }}>
+                  <div className="admin-summary-stats-grid">
+                    <div className="info-box mini-info-box">
                       <span className="info-label">Meta</span>
-                      <span className="info-value" style={{ fontSize: '0.8rem' }}>{record.data.goal}</span>
+                      <span className="info-value mini-info-value">{record.data.goal}</span>
                     </div>
-                    <div className="info-box" style={{ padding: '10px' }}>
+                    <div className="info-box mini-info-box">
                       <span className="info-label">Trabalhado</span>
-                      <span className="info-value" style={{ fontSize: '0.8rem' }}>{record.data.worked}</span>
+                      <span className="info-value mini-info-value">{record.data.worked}</span>
                     </div>
-                    <div className="info-box" style={{ padding: '10px' }}>
+                    <div className="info-box mini-info-box">
                       <span className="info-label">Saldo</span>
-                      <span className={`info-value ${record.data.isOvertime ? "overtime" : "missing"}`} style={{ fontSize: '0.8rem' }}>
+                      <span className={`info-value mini-info-value ${record.data.isOvertime ? "overtime" : "missing"}`}>
                         {record.data.diff}
                       </span>
                     </div>
@@ -565,52 +398,13 @@ export default function Admin() {
           )
         ) : (
           selectedDayUserData ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Batidas do usuário selecionado */}
-              <div className="info-box" style={{ padding: '16px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {selectedDayUserData.punches && selectedDayUserData.punches.length > 0
-                    ? Array.from({ length: Math.ceil(selectedDayUserData.punches.length / 2) }).map((_, i) => (
-                      <div key={i} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderBottom: i < Math.ceil((selectedDayUserData.punches as string[]).length / 2) - 1
-                          ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                        paddingBottom: '8px'
-                      }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Entrada</span>
-                          <span style={{ fontWeight: '700' }}>{(selectedDayUserData.punches as string[])[i * 2]}</span>
-                        </div>
-                        <div style={{ color: 'var(--text-muted)' }}>→</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Saída</span>
-                          <span style={{ fontWeight: '700' }}>{(selectedDayUserData.punches as string[])[i * 2 + 1] || "--:--"}</span>
-                        </div>
-                      </div>
-                    ))
-                    : <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sem batidas.</span>
-                  }
-                </div>
-              </div>
-
-              {/* Totais */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="info-box">
-                  <span className="info-label"><Timer size={12} /> Trabalhado</span>
-                  <span className="info-value">{selectedDayUserData.worked}</span>
-                </div>
-                <div className="info-box">
-                  <span className="info-label">
-                    {selectedDayUserData.isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo
-                  </span>
-                  <span className={`info-value ${selectedDayUserData.isOvertime ? "overtime" : "missing"}`}>
-                    {selectedDayUserData.diff}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <DayInfo
+              punches={selectedDayUserData.punches}
+              worked={selectedDayUserData.worked}
+              diff={selectedDayUserData.diff}
+              isOvertime={selectedDayUserData.isOvertime}
+              showGoal={false}
+            />
           ) : (
             <p style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
               Sem registros.
@@ -639,12 +433,7 @@ export default function Admin() {
               }}
             >
               <div className="emp-info">
-                <div className="emp-avatar">
-                  {emp.avatarUrl
-                    ? <img src={emp.avatarUrl} alt="" />
-                    : <UserIcon size={18} color="white" />
-                  }
-                </div>
+                <Avatar src={emp.avatarUrl} name={emp.name} size={36} className="emp-avatar" />
                 <div>
                   <div className="emp-name">{emp.name}</div>
                   <div className="emp-team">{emp.teamName || "Sem Equipe"}</div>
@@ -662,397 +451,6 @@ export default function Admin() {
           ))}
         </div>
       </Modal>
-
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .admin-header-new {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-        .header-row-1 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .header-row-2 {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-        }
-        .month-nav-new {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .month-label-new {
-          font-weight: 700;
-          text-transform: capitalize;
-          min-width: 140px;
-          text-align: center;
-          font-size: 0.95rem;
-        }
-        .toggles-group {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .toggle-container-new {
-          background: rgba(255, 255, 255, 0.03);
-          padding: 4px;
-          border-radius: 12px;
-          display: flex;
-          gap: 4px;
-          border: 1px solid var(--glass-border);
-        }
-        .view-toggle-new {
-          padding: 6px 14px;
-          border-radius: 9px;
-          font-size: 0.7rem;
-          font-weight: 700;
-          text-decoration: none;
-          color: var(--text-muted);
-          transition: all 0.2s;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-family: inherit;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .view-toggle-new.active {
-          background: var(--primary);
-          color: white;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-        .btn-saldos-new {
-          background: rgba(99, 102, 241, 0.1);
-          border: 1px solid rgba(99, 102, 241, 0.3);
-          color: #a5b4fc;
-          padding: 8px 16px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 700;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.2s;
-        }
-        .btn-saldos-new:hover {
-          background: var(--primary);
-          color: white;
-          transform: translateY(-1px);
-        }
-        .balance-mini-left {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 16px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          margin-top: 10px;
-        }
-        .balance-mini-left .label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          font-weight: 600;
-        }
-        .balance-mini-left .value {
-          font-size: 1rem;
-          font-weight: 800;
-        }
-
-        @media (max-width: 600px) {
-          .header-row-1 {
-            flex-direction: row;
-            justify-content: space-between;
-          }
-          .header-row-2 {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .toggles-group {
-            justify-content: space-between;
-          }
-          .toggle-container-new {
-            flex: 1;
-          }
-          .view-toggle-new {
-            flex: 1;
-            text-align: center;
-          }
-          .compact-balance-new {
-            justify-content: center;
-          }
-          .month-label-new {
-            min-width: 110px;
-            font-size: 0.85rem;
-          }
-          h1 {
-            font-size: 1.4rem;
-          }
-        }
-        .custom-select {
-          width: 100%;
-          background: rgba(0, 0, 0, 0.3);
-          border: 1px solid var(--glass-border);
-          border-radius: 14px;
-          padding: 12px 16px;
-          color: white;
-          font-size: 0.9rem;
-          appearance: none;
-          cursor: pointer;
-          outline: none;
-          transition: all 0.2s;
-        }
-        .custom-select:focus {
-          border-color: var(--primary);
-          background: rgba(0, 0, 0, 0.4);
-        }
-
-        .filters-grid-new {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-
-        @media (max-width: 600px) {
-          .filters-grid-new {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .team-balance-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .team-balance-item {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 16px;
-          padding: 12px 16px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          transition: all 0.2s;
-        }
-        .team-balance-item.clickable {
-          cursor: pointer;
-        }
-        .team-balance-item.clickable:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: var(--primary);
-          transform: translateY(-2px);
-        }
-        .emp-info {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .emp-avatar {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          background: var(--primary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-        }
-        .emp-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .emp-name {
-          font-weight: 700;
-          font-size: 0.9rem;
-        }
-        .emp-team {
-          font-size: 0.7rem;
-          color: var(--text-muted);
-        }
-        .emp-balances {
-          display: flex;
-          gap: 16px;
-        }
-        .balance-mini {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 2px;
-        }
-        .balance-mini .label {
-          font-size: 0.55rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-        }
-        .balance-mini .value {
-          font-size: 0.85rem;
-          font-weight: 700;
-        }
-
-        /* Weekly Schedule List */
-        .weekly-schedule-container {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-top: 10px;
-        }
-        .schedule-day-row {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--glass-border);
-          border-radius: 20px;
-          padding: 16px;
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .schedule-day-row:hover {
-          background: rgba(255, 255, 255, 0.06);
-          transform: translateX(4px);
-        }
-        .day-info-mini {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          min-width: 50px;
-          padding-right: 20px;
-          border-right: 1px solid var(--glass-border);
-        }
-        .day-num {
-          font-size: 1.4rem;
-          font-weight: 800;
-          line-height: 1;
-        }
-        .day-name {
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          color: var(--text-muted);
-          font-weight: 700;
-        }
-        .punches-flow {
-          flex: 1;
-          display: flex;
-          gap: 12px;
-          overflow-x: auto;
-          padding-bottom: 4px;
-        }
-        .day-punches-wrapper {
-          display: flex;
-          gap: 12px;
-        }
-        .punch-card-mini {
-          background: rgba(0, 0, 0, 0.2);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px;
-          padding: 8px 16px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-width: fit-content;
-        }
-        .punch-item {
-          display: flex;
-          flex-direction: column;
-        }
-        .p-label {
-          font-size: 0.55rem;
-          color: var(--text-muted);
-          text-transform: uppercase;
-        }
-        .p-time {
-          font-size: 0.9rem;
-          font-weight: 700;
-        }
-        .punch-arrow {
-          color: var(--text-muted);
-          font-size: 0.8rem;
-          opacity: 0.5;
-        }
-        .day-balance-tag {
-          padding: 6px 12px;
-          border-radius: 10px;
-          font-size: 0.8rem;
-          font-weight: 800;
-          min-width: 70px;
-          text-align: center;
-        }
-        .no-records-text {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-          font-style: italic;
-        }
-
-        @media (max-width: 600px) {
-          .schedule-day-row {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-          }
-          .day-info-mini {
-            flex-direction: row;
-            justify-content: space-between;
-            border-right: none;
-            border-bottom: 1px solid var(--glass-border);
-            padding-right: 0;
-            padding-bottom: 8px;
-          }
-          .day-num { font-size: 1.1rem; }
-          .punches-flow {
-            flex-wrap: wrap;
-          }
-          .day-balance-tag {
-            align-self: flex-end;
-          }
-        }
-
-        .team-day-summary {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-        .summary-text {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          font-weight: 500;
-        }
-        .scheduled-avatars-new {
-          display: flex;
-          gap: -4px; /* Sobrepor levemente */
-        }
-        .avatar-mini-new {
-          width: 24px;
-          height: 24px;
-          border-radius: 8px;
-          border: 2px solid #0f172a;
-          background: var(--primary);
-          overflow: hidden;
-          margin-left: -8px;
-        }
-        .avatar-mini-new:first-child {
-          margin-left: 0;
-        }
-        .avatar-mini-new img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .avatar-more-new {
-          font-size: 0.65rem;
-          font-weight: 700;
-          color: var(--text-muted);
-          margin-left: 8px;
-        }
-      `}} />
     </div>
   );
 }

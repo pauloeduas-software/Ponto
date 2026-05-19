@@ -1,0 +1,204 @@
+/* Estilos específicos do Dashboard / Histórico de Ponto */
+
+
+/* Dashboard Refactored Layout Classes to replace inline styles */
+.dashboard-sub-header {
+  margin-bottom: -8px;
+}
+
+.dashboard-modal-grid {
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.dashboard-modal-edit-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-modal-goal-banner {
+  padding: 16px;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-modal-goal-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.dashboard-modal-goal-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.dashboard-modal-goal-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-modal-goal-input {
+  width: 100px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 6px 30px 6px 10px;
+  color: white;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dashboard-modal-goal-input-icon {
+  position: absolute;
+  right: 10px;
+  opacity: 0.6;
+}
+
+.dashboard-modal-punches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-modal-punch-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+}
+
+.dashboard-modal-punch-card.invalid {
+  background: rgba(255, 68, 68, 0.05);
+  border: 1px solid #ff4444;
+}
+
+.dashboard-modal-error-badge {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  background: #ff4444;
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.dashboard-modal-input-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+}
+
+.dashboard-modal-label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.dashboard-modal-label.invalid {
+  color: #ff4444;
+}
+
+.dashboard-modal-input-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.dashboard-modal-input-row input {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.dashboard-modal-input-row input.invalid {
+  border-color: #ff4444;
+}
+
+.dashboard-modal-clear-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: none;
+  color: #f87171;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.dashboard-modal-arrow {
+  margin-top: 16px;
+  color: var(--text-muted);
+}
+
+.dashboard-modal-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dashboard-modal-actions-grid-spaced {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-cancel-glass {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: none !important;
+}
+
+.btn-edit-glass {
+  padding: 14px !important;
+  font-size: 0.9rem !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: none !important;
+}
+
+.btn-delete-dashed {
+  padding: 14px !important;
+  font-size: 0.9rem !important;
+  background: transparent !important;
+  border: 1px dashed var(--error) !important;
+  color: var(--error) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-modal-empty {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.dashboard-modal-empty p {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.btn-add-primary {
+  padding: 12px !important;
+  font-size: 0.9rem !important;
+  width: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  background: rgba(99, 102, 241, 0.1) !important;
+  border: 1px solid var(--primary) !important;
+  box-shadow: none !important;
+}
+
+.btn-icon-margin {
+  margin-right: 8px;
+}
+
+
