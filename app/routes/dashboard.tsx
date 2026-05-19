@@ -25,7 +25,7 @@ import { MonthSelector } from "../components/MonthSelector";
 import { DayInfo } from "../components/DayInfo";
 import "../styles/calendar.css";
 import "../styles/dashboard.css";
-import { requireUserId, getUser } from "../session.server";
+import { requireUserId, getUser } from "../services/session.server";
 import { getDashboardHistory, savePunchRecord, deletePunchRecord } from "../services/dashboardService.server";
 
 export async function loader({ request }: { request: Request }) {

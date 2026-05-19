@@ -1,4 +1,4 @@
-import { db } from "../db.server";
+import { db } from "./db.server";
 import { type Shift } from "../types";
 
 export function getEscalaData(user: any, selectedTeamParam: string | null) {

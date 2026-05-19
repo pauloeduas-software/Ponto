@@ -1,4 +1,4 @@
-import { db } from "../db.server";
+import { db } from "./db.server";
 import bcrypt from "bcryptjs";
 import type { User } from "../types";
 

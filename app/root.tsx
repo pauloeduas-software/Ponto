@@ -21,7 +21,7 @@ import {
   Calculator,
   User as UserIcon
 } from "lucide-react";
-import { getUser } from "./session.server";
+import { getUser } from "./services/session.server";
 import { Avatar } from "./components/Avatar";
 
 export async function loader({ request }: { request: Request }) {
@@ -105,7 +105,7 @@ function Sidebar({ user }: { user: any }) {
       </Link>
 
       <Link to="/perfil" prefetch="render" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
-        <Avatar src={user?.avatarUrl} name={user?.name} size={28} style={{ borderRadius: '8px' }} />
+        <Avatar src={user?.avatarUrl} name={user?.name} size={28} className="sidebar-avatar" />
       </Link>
     </aside>
   );
@@ -116,23 +116,7 @@ function ProgressBar() {
   const active = navigation.state !== "idle";
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: "3px",
-        zIndex: 9999,
-        transition: "transform 200ms ease-in-out, opacity 200ms",
-        opacity: active ? 1 : 0,
-        transform: `scaleX(${active ? 1 : 0})`,
-        transformOrigin: "left",
-        background: "linear-gradient(90deg, var(--primary) 0%, #818cf8 100%)",
-        boxShadow: "0 0 8px var(--primary)",
-        pointerEvents: "none",
-      }}
-    />
+    <div className={`global-progress-bar ${active ? 'active' : ''}`} />
   );
 }
 

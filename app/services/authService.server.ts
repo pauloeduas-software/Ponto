@@ -1,6 +1,6 @@
-import { db } from "../db.server";
+import { db } from "./db.server";
 import bcrypt from "bcryptjs";
-import { createUserSession } from "../session.server";
+import { createUserSession } from "./session.server";
 
 export async function registerUser(username: string, password: string, name: string) {
   const existing = db.prepare("SELECT id FROM User WHERE username = ?").get(username);

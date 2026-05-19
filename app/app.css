@@ -1056,3 +1056,29 @@ input:focus {
     font-size: 1.4rem;
   }
 }
+
+/* Barra de progresso global de navegação */
+.global-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  transition: transform 200ms ease-in-out, opacity 200ms;
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--primary) 0%, #818cf8 100%);
+  box-shadow: 0 0 8px var(--primary);
+  pointer-events: none;
+}
+.global-progress-bar.active {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+/* Customização do avatar do menu lateral */
+.sidebar-avatar {
+  border-radius: 8px !important;
+}

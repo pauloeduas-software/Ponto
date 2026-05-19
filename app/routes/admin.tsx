@@ -25,7 +25,7 @@ import { Avatar } from "../components/Avatar";
 import { DayInfo } from "../components/DayInfo";
 import "../styles/calendar.css";
 import "../styles/admin.css";
-import { requireUserId, getUser } from "../session.server";
+import { requireUserId, getUser } from "../services/session.server";
 import { type SavedDay } from "../types";
 import { getAdminData } from "../services/adminService.server";
 

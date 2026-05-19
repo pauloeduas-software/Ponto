@@ -1,5 +1,5 @@
-import { db } from "../db.server";
-import { requireUserId } from "../session.server";
+import { db } from "./db.server";
+import { requireUserId } from "./session.server";
 import { minutesToHHMM, timeToMinutes } from "../utils/time";
 
 export async function getHomeData(request: Request) {

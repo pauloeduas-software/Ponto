@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
-import { requireUserId, getUser } from "../session.server";
+import { requireUserId, getUser } from "../services/session.server";
 import { type Shift } from "../types";
 import { Modal } from "../components/Modal";
 import { CalendarGrid } from "../components/CalendarGrid";

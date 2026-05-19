@@ -12,7 +12,7 @@ import {
   Key
 } from "lucide-react";
 import { useLoaderData, useFetcher } from "react-router";
-import { requireUserId, getUser } from "../session.server";
+import { requireUserId, getUser } from "../services/session.server";
 import { Modal } from "../components/Modal";
 import { Avatar } from "../components/Avatar";
 import type { User } from "../types";

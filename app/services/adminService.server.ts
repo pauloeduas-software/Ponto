@@ -1,4 +1,4 @@
-import { db } from "../db.server";
+import { db } from "./db.server";
 import { minutesToHHMM } from "../utils/time";
 import { type SavedDay } from "../types";
 

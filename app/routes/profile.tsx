@@ -12,8 +12,8 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { useLoaderData, useFetcher, Form, redirect } from "react-router";
-import { db } from "../db.server";
-import { requireUserId, getUser } from "../session.server";
+import { db } from "../services/db.server";
+import { requireUserId, getUser } from "../services/session.server";
 import { Avatar } from "../components/Avatar";
 import "../styles/profile.css";
 
