@@ -1,5 +1,5 @@
 # Estágio de base
-FROM node:20-slim AS base
+FROM node:20.20.2-trixie-slim AS base
 WORKDIR /app
 
 # Estágio de instalação de dependências
@@ -24,7 +24,7 @@ COPY package.json ./
 RUN npm install --omit=dev
 
 # Imagem final de produção (mínima)
-FROM node:20-slim AS release
+FROM node:20.20.2-trixie-slim AS release
 WORKDIR /app
 
 # Copia apenas dependências de produção (sem TypeScript, Vite, Tailwind, etc.)
