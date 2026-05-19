@@ -91,9 +91,7 @@
   font-weight: 700;
 }
 
-/* Reusable schedule and avatar styles are imported from calendar.css */
-
-/* Refactored Layout Classes to replace inline styles */
+/* CSS para admin */
 .admin-header-actions {
   display: flex;
   width: 100%;

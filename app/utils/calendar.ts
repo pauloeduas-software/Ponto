@@ -11,12 +11,12 @@ export const getDaysInMonth = (currentDate: Date): (CalendarDay | null)[] => {
   
   const days: (CalendarDay | null)[] = [];
   
-  // Fill empty slots for previous month
+  // Preenche slots vazios do mês anterior
   for (let i = 0; i < firstDay; i++) {
     days.push(null);
   }
   
-  // Fill actual days
+  // Preenche os dias do mês
   for (let i = 1; i <= lastDate; i++) {
     const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
     days.push({ day: i, dateStr });

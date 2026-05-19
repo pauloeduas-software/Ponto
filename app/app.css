@@ -894,10 +894,7 @@ input:focus {
   font-size: 0.85rem;
 }
 
-/* =========================================================
-   Componentes Compartilhados — usados em múltiplas páginas
-   ========================================================= */
-
+/* Componentes Compartilhados — usados em múltiplas páginas */
 /* Cabeçalho padrão de página */
 .admin-header-new {
   display: flex;

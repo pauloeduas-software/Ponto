@@ -1,12 +1,11 @@
 # Estágio de base
-FROM node:20-slim AS base
+FROM node:20.20.2-alpine3.23 AS base
 WORKDIR /app
 
 # Estágio de instalação de dependências
 FROM base AS install
 # Dependências para compilar better-sqlite3
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache python3 make g++
 COPY package.json ./
 RUN npm install
 
@@ -18,13 +17,12 @@ RUN npm run build
 
 # Instalação apenas de dependências de produção (sem devDependencies)
 FROM base AS production-deps
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache python3 make g++
 COPY package.json ./
 RUN npm install --omit=dev
 
 # Imagem final de produção (mínima)
-FROM node:20-slim AS release
+FROM node:20.20.2-alpine3.23 AS release
 WORKDIR /app
 
 # Copia apenas dependências de produção (sem TypeScript, Vite, Tailwind, etc.)

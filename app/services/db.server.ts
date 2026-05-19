@@ -13,8 +13,7 @@ if (!fs.existsSync(dbDir)) {
 
 export const db = new Database(dbPath);
 
-// --- Otimizações de Performance do SQLite ---
-// WAL: Permite leituras e escritas simultâneas (essencial para múltiplos usuários)
+// Permite leituras e escritas simultâneas (essencial para múltiplos usuários)
 db.pragma("journal_mode = WAL");
 // Cache de 4MB em memória para evitar leituras repetidas do disco
 db.pragma("cache_size = -4000");
@@ -103,7 +102,7 @@ db.exec(`
 `);
 
 // MIGRAÇÃO: popula UserTeam a partir dos vínculos existentes em User.teamId
-// Só insere se ainda não existir o registro (idempotente)
+// Só insere se ainda não existir o registro
 try {
   db.exec(`
     INSERT OR IGNORE INTO UserTeam (userId, teamId, role)

@@ -1,4 +1,4 @@
-/* Shared Calendar & Detailed Weekly Schedule Styles */
+/* Estilos de Calendário e Detalhes de Agenda Semanal Compartilhados */
 
 .weekly-schedule-container {
   display: flex;
@@ -107,7 +107,7 @@
   font-style: italic;
 }
 
-/* Avatar overlays / mini-avatars in calendars */
+/* mini-avatares em calendários */
 .scheduled-avatars-new {
   display: flex;
   align-items: center;
@@ -155,7 +155,7 @@
   font-weight: 500;
 }
 
-/* Responsive / Mobile styles */
+/* Estilo Responsivo / Mobile styles */
 @media (max-width: 600px) {
   .schedule-day-row {
     flex-direction: column;
