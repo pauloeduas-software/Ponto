@@ -11,6 +11,7 @@ import {
   useRouteLoaderData,
   useNavigation
 } from "react-router";
+import type { ShouldRevalidateFunction } from "react-router";
 import { useEffect, useState, useMemo } from "react";
 import {
   Clock,
@@ -28,12 +29,32 @@ export async function loader({ request }: { request: Request }) {
   return { user };
 }
 
-// Otimização: O root só revalida se houver mudança de página ou login/logout
-// Evita que o auto-sync da Home fique recarregando os dados do usuário logado
-// Otimização: Removida a trava de revalidação para garantir que mudanças de cargo reflitam na UI imediatamente
-export function shouldRevalidate() {
-  return true;
-}
+// Otimização: Evita revalidação desnecessária do root loader nas trocas normais de página.
+// Revalida apenas se houver submissões de dados (mutações) ou se o usuário navegar
+// de/para a página de perfil (onde pode atualizar dados da conta).
+export const shouldRevalidate: ShouldRevalidateFunction = ({
+  formMethod,
+  currentUrl,
+  nextUrl,
+  actionResult
+}) => {
+  // Revalida se houve envio de formulário (mutações via POST, PUT, DELETE, etc)
+  if (formMethod && formMethod !== "GET") {
+    return true;
+  }
+  
+  // Revalida se houver um resultado de action bem-sucedido
+  if (actionResult) {
+    return true;
+  }
+
+  // Revalida se navegar de ou para a página de perfil
+  if (currentUrl.pathname === "/perfil" || nextUrl.pathname === "/perfil") {
+    return true;
+  }
+
+  return false;
+};
 
 export const links = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -61,29 +82,29 @@ function Sidebar({ user }: { user: any }) {
 
   return (
     <aside className="sidebar">
-      <Link to="/" prefetch="intent" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
+      <Link to="/" prefetch="render" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
         <Clock size={24} />
       </Link>
 
       {(user?.role === 'admin' || user?.role === 'manager') && (
-        <Link to="/admin" prefetch="intent" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
+        <Link to="/admin" prefetch="render" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
           <Shield size={24} />
         </Link>
       )}
 
-      <Link to="/escala" prefetch="intent" className={`sidebar-link ${path === '/escala' ? 'active' : ''}`} title="Escala">
+      <Link to="/escala" prefetch="render" className={`sidebar-link ${path === '/escala' ? 'active' : ''}`} title="Escala">
         <CalendarClock size={24} />
       </Link>
 
-      <Link to="/dashboard" prefetch="intent" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
+      <Link to="/dashboard" prefetch="render" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
         <LayoutDashboard size={24} />
       </Link>
       
-      <Link to="/simulador" prefetch="intent" className={`sidebar-link ${path === '/simulador' ? 'active' : ''}`} title="Simulador de Horas">
+      <Link to="/simulador" prefetch="render" className={`sidebar-link ${path === '/simulador' ? 'active' : ''}`} title="Simulador de Horas">
         <Calculator size={24} />
       </Link>
 
-      <Link to="/perfil" prefetch="intent" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
+      <Link to="/perfil" prefetch="render" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
         <Avatar src={user?.avatarUrl} name={user?.name} size={28} style={{ borderRadius: '8px' }} />
       </Link>
     </aside>
