@@ -37,17 +37,35 @@ export default function Management() {
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [passwordFeedback, setPasswordFeedback] = useState<{ success: boolean; message?: string; error?: string } | null>(null);
   const currentUser = users.find(u => u.id === editingUserId);
   const teamFormRef = useRef<HTMLFormElement>(null);
+  const passwordFormRef = useRef<HTMLFormElement>(null);
+
+  // Limpa o feedback de senha ao fechar ou trocar de usuário
+  useEffect(() => {
+    setPasswordFeedback(null);
+  }, [editingUserId]);
 
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.success) {
-      teamFormRef.current?.reset();
-      // Usamos cast para evitar erro de tipo 'never' no state idle
-      const formData = fetcher.formData as FormData | undefined;
-      if (formData?.get("_action") === "deleteUser") setEditingUserId(null);
+    if (fetcher.state === "idle" && fetcher.data) {
+      if (fetcher.data.success) {
+        teamFormRef.current?.reset();
+      }
+      
+      const action = fetcher.data?.action;
+      if (action === "deleteUser" && fetcher.data?.success) {
+        setEditingUserId(null);
+      } else if (action === "changePassword") {
+        if (fetcher.data?.success) {
+          passwordFormRef.current?.reset();
+          setPasswordFeedback({ success: true, message: fetcher.data?.message });
+        } else if (fetcher.data?.error) {
+          setPasswordFeedback({ success: false, error: fetcher.data?.error });
+        }
+      }
     }
-  }, [fetcher.state, fetcher.data, fetcher.formData]);
+  }, [fetcher.state, fetcher.data]);
 
   return (
     <div className="container">
@@ -174,12 +192,24 @@ export default function Management() {
               </fetcher.Form>
             </div>
             <div className="modal-divider-top">
-              <fetcher.Form method="post">
-                <input type="hidden" name="_action" value="changePassword" /><input type="hidden" name="userId" value={currentUser.id} /><label className="modal-label-small-uppercase">Alterar Senha</label>
+              <fetcher.Form method="post" ref={passwordFormRef}>
+                <input type="hidden" name="_action" value="changePassword" /><input type="hidden" name="userId" value={currentUser.id} /><label htmlFor="newPassword" className="modal-label-small-uppercase">Alterar Senha</label>
                 <div className="modal-row-gap-8">
-                  <input type="text" name="newPassword" placeholder="Nova senha" className="input-password-change" />
-                  <button type="submit" className="btn-register btn-save-password">Salvar</button>
+                  <input type="password" id="newPassword" name="newPassword" placeholder="Nova senha (mín. 4 caracteres)" className="input-password-change" autoComplete="new-password" required />
+                  <button type="submit" className="btn-register btn-save-password">
+                    {fetcher.state === "submitting" && fetcher.formData?.get("_action") === "changePassword" ? "Salvando..." : "Salvar"}
+                  </button>
                 </div>
+                {passwordFeedback?.error && (
+                  <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: "8px", fontWeight: 500 }}>
+                    {passwordFeedback.error}
+                  </p>
+                )}
+                {passwordFeedback?.success && passwordFeedback?.message && (
+                  <p style={{ color: "#10b981", fontSize: "0.8rem", marginTop: "8px", fontWeight: 500 }}>
+                    {passwordFeedback.message}
+                  </p>
+                )}
               </fetcher.Form>
             </div>
             <div className="modal-divider-top">

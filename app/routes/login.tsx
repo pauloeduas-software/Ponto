@@ -58,18 +58,18 @@ export default function Login() {
           {isRegistering && (
             <div className="input-field">
               <User size={18} />
-              <input type="text" name="name" placeholder="Seu Nome Completo" required />
+              <input type="text" id="name-input" name="name" placeholder="Seu Nome Completo" autoComplete="name" required />
             </div>
           )}
 
           <div className="input-field">
             <User size={18} />
-            <input type="text" name="username" placeholder="Nome de Usuário" required />
+            <input type="text" id="username-input" name="username" placeholder="Nome de Usuário" autoComplete="username" required />
           </div>
 
           <div className="input-field">
             <Lock size={18} />
-            <input type="password" name="password" placeholder="Sua Senha" required />
+            <input type="password" id="password-input" name="password" placeholder="Sua Senha" autoComplete={isRegistering ? "new-password" : "current-password"} required />
           </div>
 
           <button type="submit" className="login-btn" disabled={isSubmitting}>

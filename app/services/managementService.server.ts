@@ -100,19 +100,23 @@ export async function handleManagementAction(executorUser: User, formData: FormD
     });
     try {
       deleteTx(userId);
-      return { success: true };
+      return { success: true, action: "deleteUser" };
     } catch (e: any) {
-      return { error: "Erro ao excluir: " + e.message };
+      return { error: "Erro ao excluir: " + e.message, action: "deleteUser" };
     }
   }
 
   if (actionType === "changePassword") {
     const userId = formData.get("userId") as string;
     const newPassword = formData.get("newPassword") as string;
-    if (!newPassword || newPassword.length < 4) return { error: "Senha muito curta." };
+    if (!newPassword || newPassword.length < 4) return { error: "A senha deve ter pelo menos 4 caracteres.", action: "changePassword" };
+    
+    const userExists = db.prepare("SELECT id FROM User WHERE id = ?").get(userId);
+    if (!userExists) return { error: "Usuário não encontrado.", action: "changePassword" };
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     db.prepare("UPDATE User SET password = ? WHERE id = ?").run(hashedPassword, userId);
-    return { success: true };
+    return { success: true, message: "Senha alterada com sucesso!", action: "changePassword" };
   }
 
   return null;
