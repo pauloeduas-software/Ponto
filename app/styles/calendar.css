@@ -180,11 +180,21 @@
     align-self: flex-end;
   }
   .avatar-mini-new {
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
+    width: 18px !important;
+    height: 18px !important;
+    margin-left: -6px !important;
+    border-radius: 50% !important;
+    font-size: 8px !important;
+  }
+  .avatar-mini-new:first-child {
+    margin-left: 0 !important;
   }
   .scheduled-avatars-new {
-    gap: 1px;
+    margin-top: 4px;
+    gap: 0;
+  }
+  .avatar-more-new {
+    font-size: 0.6rem;
+    margin-left: 2px;
   }
 }

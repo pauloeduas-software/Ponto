@@ -668,12 +668,14 @@ input:focus {
   }
   
   .calendar-grid {
-    gap: 3px;
+    gap: 2px;
+    width: 100%;
   }
 
   .calendar-day {
     font-size: 0.65rem;
     border-radius: 6px;
+    min-width: 0;
   }
   
   .details-grid {

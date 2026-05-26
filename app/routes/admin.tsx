@@ -225,7 +225,7 @@ export default function Admin() {
                     recCount > 0 && (
                       <AvatarGroup
                         users={filteredEmployees.filter(emp => (historyData[emp.id] || []).some(h => h.date === d.dateStr))}
-                        max={3}
+                        max={typeof window !== 'undefined' && window.innerWidth < 600 ? 2 : 3}
                         size={22}
                       />
                     )
