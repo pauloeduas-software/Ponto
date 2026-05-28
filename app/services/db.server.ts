@@ -1,127 +1,93 @@
-import Database from "better-sqlite3";
-import path from "node:path";
-import fs from "node:fs";
+import pg from "pg";
 
-// Em produção/docker, precisamos de um caminho específico para persistência de dados
-const dbPath = process.env.DATABASE_URL?.replace("file:", "") || path.join(process.cwd(), "data", "dev.db");
+console.log("=== BANCO DE DADOS: INICIALIZANDO POSTGRESQL ===");
 
-// Garante que o diretório do banco de dados exista
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+const postgresUrl = process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@localhost:5432/ponto_db";
+
+const pgPool = new pg.Pool({
+  connectionString: postgresUrl,
+  max: 20, 
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+// Mapeamento de colunas do Postgres (lowercase) para camelCase (padrão da aplicação)
+const camelKeys: Record<string, string> = {
+  avatarurl: "avatarUrl",
+  teamid: "teamId",
+  createdat: "createdAt",
+  workmins: "workMins",
+  diffmins: "diffMins",
+  isovertime: "isOvertime",
+  goalmins: "goalMins",
+  userid: "userId",
+  starttime: "startTime",
+  endtime: "endTime",
+  userteams: "userTeams",
+  teamname: "teamName",
+};
+
+function normalizeRow(row: any): any {
+  if (!row) return row;
+  const newRow: any = {};
+  for (const key of Object.keys(row)) {
+    const camel = camelKeys[key.toLowerCase()];
+    if (camel) {
+      newRow[camel] = row[key];
+    } else {
+      newRow[key] = row[key];
+    }
+  }
+  
+  // Converte boolean do Postgres para 0/1 para compatibilidade estrita nas regras de negócio antigas
+  if (newRow.isOvertime !== undefined) {
+    if (typeof newRow.isOvertime === "boolean") {
+      newRow.isOvertime = newRow.isOvertime ? 1 : 0;
+    }
+  }
+  
+  return newRow;
 }
 
-export const db = new Database(dbPath);
-
-// Permite leituras e escritas simultâneas (essencial para múltiplos usuários)
-db.pragma("journal_mode = WAL");
-// Cache de 4MB em memória para evitar leituras repetidas do disco
-db.pragma("cache_size = -4000");
-// Tabelas temporárias ficam na memória RAM (mais rápido que disco)
-db.pragma("temp_store = MEMORY");
-// Memória mapeada de 128MB para acesso ultrarrápido ao banco
-db.pragma("mmap_size = 134217728");
-// Sincronização balanceada: rápido e seguro (NORMAL vs FULL)
-db.pragma("synchronous = NORMAL");
-
-
-// Inicialização das tabelas do banco de dados
-db.exec(`
-  CREATE TABLE IF NOT EXISTS User (
-    id TEXT PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    name TEXT,
-    role TEXT DEFAULT 'employee', -- 'admin', 'manager', 'employee'
-    goal TEXT DEFAULT '08:00',
-    avatarUrl TEXT,
-    teamId TEXT,
-    FOREIGN KEY (teamId) REFERENCES Team(id)
-  )
-`);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS Team (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS PunchRecord (
-    id TEXT PRIMARY KEY,
-    date TEXT NOT NULL,
-    punches TEXT NOT NULL,
-    workMins INTEGER DEFAULT 0,
-    diffMins INTEGER DEFAULT 0,
-    isOvertime BOOLEAN DEFAULT 0,
-    goalMins INTEGER DEFAULT 480,
-    userId TEXT NOT NULL,
-    FOREIGN KEY (userId) REFERENCES User(id),
-    UNIQUE(userId, date)
-  )
-`);
-
-// MIGRATIONS (Executa apenas se necessário)
-try {
-  db.exec("ALTER TABLE PunchRecord ADD COLUMN goalMins INTEGER DEFAULT 480");
-} catch (e) {
-  // Coluna já existe ou erro na migração
+// Auxiliar para converter placeholders "?" para "$1, $2, ..." do Postgres e tratar a palavra reservada "User"
+function translateSql(sql: string): string {
+  let translated = sql;
+  
+  // Substitui "?" por "$1", "$2", etc.
+  let count = 0;
+  translated = translated.replace(/\?/g, () => {
+    count++;
+    return `$${count}`;
+  });
+  
+  // O Postgres possui "User" como palavra reservada do sistema. Colocamos aspas duplas nela:
+  translated = translated.replace(/\bUser\b/g, '"User"');
+  return translated;
 }
 
-try {
-  db.exec("ALTER TABLE User ADD COLUMN teamId TEXT");
-} catch (e) {
-  // Coluna já existe
-}
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS Shift (
-    id TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
-    date TEXT NOT NULL,
-    startTime TEXT DEFAULT '08:00',
-    endTime TEXT DEFAULT '18:00',
-    type TEXT DEFAULT 'TRABALHO',
-    FOREIGN KEY (userId) REFERENCES User(id),
-    UNIQUE(userId, date)
-  )
-`);
-
-// Tabela de vínculos N:N entre usuários e equipes (com cargo por equipe)
-db.exec(`
-  CREATE TABLE IF NOT EXISTS UserTeam (
-    userId TEXT NOT NULL,
-    teamId TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'employee',
-    PRIMARY KEY (userId, teamId),
-    FOREIGN KEY (userId) REFERENCES User(id),
-    FOREIGN KEY (teamId) REFERENCES Team(id)
-  )
-`);
-
-// MIGRAÇÃO: popula UserTeam a partir dos vínculos existentes em User.teamId
-// Só insere se ainda não existir o registro
-try {
-  db.exec(`
-    INSERT OR IGNORE INTO UserTeam (userId, teamId, role)
-    SELECT id, teamId, role
-    FROM User
-    WHERE teamId IS NOT NULL AND role IN ('manager', 'employee')
-  `);
-} catch (e) {
-  // Migração já executada ou erro ignorável
-}
-
-// ÍNDICES EXTRAS PARA PERFORMANCE (Admin/Dashboard)
-db.exec("CREATE INDEX IF NOT EXISTS idx_punch_date ON PunchRecord(date)");
-db.exec("CREATE INDEX IF NOT EXISTS idx_shift_date ON Shift(date)");
-
-// Limpeza automática de avatares antigos gigantescos para restaurar a performance instantânea das trocas de página
-try {
-  db.exec("UPDATE User SET avatarUrl = NULL WHERE avatarUrl IS NOT NULL AND LENGTH(avatarUrl) > 50000");
-} catch (e) {
-  // Ignora se der erro
-}
-
+export const db = {
+  prepare(sql: string) {
+    const pgSql = translateSql(sql);
+    
+    return {
+      async get(...params: any[]): Promise<any> {
+        const res = await pgPool.query(pgSql, params);
+        return normalizeRow(res.rows[0]);
+      },
+      
+      async all(...params: any[]): Promise<any[]> {
+        const res = await pgPool.query(pgSql, params);
+        return res.rows.map(normalizeRow);
+      },
+      
+      async run(...params: any[]): Promise<any> {
+        const res = await pgPool.query(pgSql, params);
+        return { changes: res.rowCount, lastInsertRowid: undefined };
+      }
+    };
+  },
+  
+  async exec(sql: string): Promise<void> {
+    await pgPool.query(sql);
+  }
+};

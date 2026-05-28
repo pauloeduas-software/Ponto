@@ -1,3 +1,9 @@
+export interface Team {
+  id: string;
+  name: string;
+  createdAt?: string;
+}
+
 export interface UserTeamMembership {
   teamId: string;
   teamName: string;
@@ -10,6 +16,7 @@ export interface User {
   username: string;
   role: 'admin' | 'manager' | 'employee';
   teamId?: string;
+  teamName?: string;
   avatarUrl?: string;
   goal?: string;
   userTeams?: UserTeamMembership[];
@@ -36,4 +43,26 @@ export interface SavedDay {
   entry?: string;
   exit?: string;
   breaks?: {start: string, end: string}[];
+}
+
+export interface UserDbRow {
+  id: string;
+  username: string;
+  password?: string;
+  name: string;
+  role: 'admin' | 'manager' | 'employee';
+  goal?: string;
+  avatarUrl?: string;
+  teamId?: string;
+}
+
+export interface PunchRecordDbRow {
+  id: string;
+  date: string;
+  punches: string;
+  workMins: number;
+  diffMins: number;
+  isOvertime: number;
+  goalMins: number;
+  userId: string;
 }

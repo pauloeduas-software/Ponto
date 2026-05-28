@@ -1,12 +1,13 @@
 import { db } from "./db.server";
 import { requireUserId } from "./session.server";
 import { minutesToHHMM, timeToMinutes } from "../utils/time";
+import type { UserDbRow, PunchRecordDbRow } from "../types";
 
 export async function getHomeData(request: Request) {
   const userId = await requireUserId(request);
-  const user = db.prepare("SELECT * FROM User WHERE id = ?").get(userId) as any;
+  const user = await db.prepare("SELECT * FROM User WHERE id = ?").get(userId) as UserDbRow | undefined;
   const dateStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-  const record = db.prepare("SELECT * FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, dateStr) as any;
+  const record = await db.prepare("SELECT * FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, dateStr) as PunchRecordDbRow | undefined;
 
   return {
     user,
@@ -27,18 +28,18 @@ export async function saveHomePunchRecord(request: Request, formData: FormData) 
   const goal = formData.get("goal") as string;
 
   const goalMins = timeToMinutes(goal);
-  const existing = db.prepare("SELECT id FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, date);
+  const existing = await db.prepare("SELECT id FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, date);
 
   if (existing) {
-    db.prepare(
+    await db.prepare(
       "UPDATE PunchRecord SET punches = ?, workMins = ?, diffMins = ?, isOvertime = ?, goalMins = ? WHERE userId = ? AND date = ?"
     ).run(punches, workMins, diffMins, isOvertime, goalMins, userId, date);
   } else {
-    db.prepare(
+    await db.prepare(
       "INSERT INTO PunchRecord (id, userId, date, punches, workMins, diffMins, isOvertime, goalMins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     ).run(crypto.randomUUID(), userId, date, punches, workMins, diffMins, isOvertime, goalMins);
   }
 
   // Atualiza a meta padrão do usuário para que os próximos dias herdem esse valor
-  db.prepare("UPDATE User SET goal = ? WHERE id = ?").run(goal, userId);
+  await db.prepare("UPDATE User SET goal = ? WHERE id = ?").run(goal, userId);
 }

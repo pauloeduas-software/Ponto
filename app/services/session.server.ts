@@ -1,5 +1,6 @@
 import { createCookieSessionStorage, redirect } from "react-router";
 import { db } from "./db.server";
+import type { User } from "../types";
 
 const sessionSecret = process.env.SESSION_SECRET;
 
@@ -30,23 +31,26 @@ export async function getUserId(request: Request): Promise<string | undefined> {
   return userId;
 }
 
-export async function getUser(request: Request) {
+export async function getUser(request: Request): Promise<User | null> {
   const userId = await getUserId(request);
   if (!userId) return null;
 
   try {
-    const user = db.prepare("SELECT id, username, name, role, goal, avatarUrl, teamId FROM User WHERE id = ?").get(userId);
+    const user = await db.prepare("SELECT id, username, name, role, goal, avatarUrl, teamId FROM User WHERE id = ?").get(userId) as Omit<User, "userTeams"> | undefined;
     if (!user) return null;
 
     // Busca todos os vínculos de equipe do usuário (para suporte a múltiplas equipes)
-    const userTeams = db.prepare(`
+    const userTeams = await db.prepare(`
       SELECT ut.teamId, ut.role, t.name as teamName
       FROM UserTeam ut
       JOIN Team t ON ut.teamId = t.id
       WHERE ut.userId = ?
-    `).all(userId);
+    `).all(userId) as User["userTeams"];
 
-    return { ...user as object, userTeams };
+    return {
+      ...user,
+      userTeams: userTeams || [],
+    };
   } catch {
     return null;
   }

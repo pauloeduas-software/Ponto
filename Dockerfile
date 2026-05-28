@@ -4,8 +4,6 @@ WORKDIR /app
 
 # Estágio de instalação de dependências
 FROM base AS install
-# Dependências para compilar better-sqlite3
-RUN apk add --no-cache python3 make g++
 COPY package.json ./
 RUN npm install
 
@@ -17,7 +15,6 @@ RUN npm run build
 
 # Instalação apenas de dependências de produção (sem devDependencies)
 FROM base AS production-deps
-RUN apk add --no-cache python3 make g++
 COPY package.json ./
 RUN npm install --omit=dev
 
@@ -30,9 +27,6 @@ COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=build /app/build ./build
 COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
-
-# Garante que a pasta data exista para o volume do Dokploy
-RUN mkdir -p /app/data
 
 # Configurações de ambiente
 ENV NODE_ENV=production

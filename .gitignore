@@ -16,10 +16,7 @@ pnpm-lock.yaml
 /.cache/
 
 # Banco de Dados (CRÍTICO)
-/data/*.db
-/data/*.db-journal
-/data/*.db-shm
-/data/*.db-wal
+/data/
 
 # Variáveis de Ambiente
 .env

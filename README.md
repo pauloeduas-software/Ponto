@@ -3,7 +3,7 @@
 [![React Router](https://img.shields.io/badge/React_Router-v7-CA4245?logo=react-router)](https://reactrouter.com)
 [![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![SQLite](https://img.shields.io/badge/SQLite-Lighter-003B57?logo=sqlite)](https://sqlite.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-v16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
 [![Lucide React](https://img.shields.io/badge/Lucide-Icons-F72C5B?logo=lucide)](https://lucide.dev)
 
@@ -44,7 +44,7 @@ O **Ponto** é uma solução corporativa robusta para controle de jornada de tra
 | **Framework** | React Router v7 (Framework Mode) |
 | **Ambiente** | Node.js / Runtime compatível |
 | **Linguagem** | TypeScript |
-| **Banco de Dados** | SQLite (better-sqlite3) |
+| **Banco de Dados** | PostgreSQL (pg) |
 | **Segurança** | Bcryptjs (Criptografia de Senhas) & Cookie Session storage |
 | **Ícones**| Lucide React |
 
@@ -54,15 +54,19 @@ O **Ponto** é uma solução corporativa robusta para controle de jornada de tra
 
 ```text
 ├── app/
-│   ├── components/        # Componentes UI reutilizáveis (Modal, StatCard, etc.)
-│   ├── routes/            # Rotas, Loaders e Actions (Admin, Escala, Management, Profile)
-│   ├── utils/             # Lógica de cálculo de tempo e manipulação de calendário
-│   ├── db.server.ts       # Camada de persistência SQLite
-│   ├── session.server.ts  # Autenticação e proteção de rotas (RBAC)
-│   └── types.ts           # Definições de tipos compartilhados
-├── data/                  # Persistência do banco de dados SQLite
-├── public/                # Ativos estáticos
-└── Dockerfile             # Configuração para deploy conteinerizado
+│   ├── components/        # Componentes UI de Layout e Feedback (Modal, DayInfo, etc.)
+│   ├── domain/            # Modelagem de domínio e lógica de negócios pura (calculadoras, testes)
+│   ├── routes/            # Configuração de rotas de página (Loaders/Actions de entrada)
+│   ├── services/          # Camada de serviços e persistência do Postgres (db.server.ts, auth, etc.)
+│   ├── styles/            # Folhas de estilo modularizadas (Vanilla CSS)
+│   ├── utils/             # Lógica de utilitários gerais e calendarização do tempo
+│   ├── views/             # Componentes visuais principais e painéis de controle (Dashboard, Escala, etc.)
+│   ├── root.tsx           # Entrada principal da aplicação React Router v7
+│   ├── routes.ts          # Registro e mapeamento de rotas da aplicação
+│   └── types.ts           # Interfaces e definições de tipos TypeScript globais
+├── data/                  # Backup local de segurança (desativado em produção)
+├── public/                # Ativos e imagens estáticas
+└── Dockerfile             # Configuração para deploy conteinerizado em produção
 ```
 
 ---
