@@ -100,7 +100,7 @@ export function DashboardView({ user, history }: DashboardViewProps) {
             <MonthSelector currentDate={currentDate} onChangeMonth={changeMonth} />
           </div>
 
-          <div className="header-row-2 dashboard-sub-header">
+          <div className="header-row-2 dashboard-sub-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '10px' }}>
             <div className="toggle-container-new">
               <button 
                 onClick={() => setCalendarView('grid')} 
@@ -111,6 +111,15 @@ export function DashboardView({ user, history }: DashboardViewProps) {
                 className={`view-toggle-new ${calendarView === 'list' ? 'active' : ''}`}
               >Detalhado</button>
             </div>
+            
+            <a 
+              href={`/api/export-punches?month=${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
+              className="view-toggle-new"
+              style={{ textDecoration: 'none', cursor: 'pointer', background: 'rgba(255, 255, 255, 0.05)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+              title="Exportar registros deste mês para Excel"
+            >
+              Exportar
+            </a>
           </div>
 
           <div className="header-row-2">

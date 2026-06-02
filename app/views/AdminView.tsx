@@ -58,8 +58,8 @@ export function AdminView({
 
   const filteredEmployees = useMemo(() => {
     if (selectedTeamId === "todos") return employees;
-    return employees.filter(emp => 
-      emp.teamId === selectedTeamId || 
+    return employees.filter(emp =>
+      emp.teamId === selectedTeamId ||
       (emp.userTeams && emp.userTeams.some((ut: any) => ut.teamId === selectedTeamId))
     );
   }, [employees, selectedTeamId]);
@@ -126,13 +126,26 @@ export function AdminView({
                 >Detalhado</button>
               </div>
             </div>
-            <button
-              className="btn-saldos-new"
-              onClick={() => setIsTeamBalanceModalOpen(true)}
-            >
-              <Wallet size={16} />
-              <span>Saldos</span>
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn-saldos-new"
+                onClick={() => setIsTeamBalanceModalOpen(true)}
+              >
+                <Wallet size={16} />
+                <span>Saldos</span>
+              </button>
+
+              {selectedUserId !== "todos" && (
+                <a
+                  href={`/api/export-punches?month=${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}&userId=${selectedUserId}`}
+                  className="btn-saldos-new"
+                  style={{ textDecoration: 'none' }}
+                  title="Exportar colaborador selecionado deste mês"
+                >
+                  Exportar
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
@@ -345,9 +358,8 @@ export function AdminView({
                       ? Array.from({ length: Math.ceil((record.data.punches as string[]).length / 2) }).map((_, i) => (
                         <div
                           key={i}
-                          className={`admin-summary-punch-row ${
-                            i < Math.ceil((record.data.punches as string[]).length / 2) - 1 ? "has-border" : ""
-                          }`}
+                          className={`admin-summary-punch-row ${i < Math.ceil((record.data.punches as string[]).length / 2) - 1 ? "has-border" : ""
+                            }`}
                         >
                           <div className="admin-summary-col">
                             <span className="admin-summary-meta">Entrada</span>
