@@ -40,3 +40,5 @@ Thumbs.db
 
 # React Router
 .react-router/
+
+/generated/prisma

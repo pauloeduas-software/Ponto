@@ -1,11 +1,12 @@
-import { db } from "./db.server";
+import { prisma } from "./prisma.server";
 import { minutesToHHMM, timeToMinutes } from "../utils/time";
-import type { SavedDay, PunchRecordDbRow } from "../types";
+import type { SavedDay } from "../types";
 
 export async function getDashboardHistory(userId: string): Promise<SavedDay[]> {
-  const records = await db
-    .prepare("SELECT * FROM PunchRecord WHERE userId = ? ORDER BY date DESC")
-    .all(userId) as PunchRecordDbRow[];
+  const records = await prisma.punchRecord.findMany({
+    where: { userId },
+    orderBy: { date: "desc" },
+  });
 
   return records.map(r => ({
     date: r.date,
@@ -14,9 +15,10 @@ export async function getDashboardHistory(userId: string): Promise<SavedDay[]> {
     diffMins: r.diffMins,
     goalMins: r.goalMins || 480,
     goal: minutesToHHMM(r.goalMins || 480),
-    isOvertime: r.isOvertime === 1 || (r.isOvertime as any) === true,
+    isOvertime: r.isOvertime,
     worked: minutesToHHMM(r.workMins),
     diff: minutesToHHMM(Math.abs(r.diffMins)),
+    observation: r.observation || undefined,
   }));
 }
 
@@ -27,24 +29,45 @@ export async function savePunchRecord(
   workMins: number,
   diffMins: number,
   isOvertime: number,
-  goal: string
+  goal: string,
+  observation?: string
 ): Promise<void> {
   const goalMins = timeToMinutes(goal);
-  const existing = await db
-    .prepare("SELECT id FROM PunchRecord WHERE userId = ? AND date = ?")
-    .get(userId, date);
+  const existing = await prisma.punchRecord.findFirst({
+    where: { userId, date }
+  });
 
   if (existing) {
-    await db.prepare(
-      "UPDATE PunchRecord SET punches = ?, workMins = ?, diffMins = ?, isOvertime = ?, goalMins = ? WHERE userId = ? AND date = ?"
-    ).run(punches, workMins, diffMins, isOvertime, goalMins, userId, date);
+    await prisma.punchRecord.update({
+      where: { id: existing.id },
+      data: {
+        punches,
+        workMins,
+        diffMins,
+        isOvertime: isOvertime === 1,
+        goalMins,
+        observation: observation || null
+      }
+    });
   } else {
-    await db.prepare(
-      "INSERT INTO PunchRecord (id, userId, date, punches, workMins, diffMins, isOvertime, goalMins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(crypto.randomUUID(), userId, date, punches, workMins, diffMins, isOvertime, goalMins);
+    await prisma.punchRecord.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId,
+        date,
+        punches,
+        workMins,
+        diffMins,
+        isOvertime: isOvertime === 1,
+        goalMins,
+        observation: observation || null
+      }
+    });
   }
 }
 
 export async function deletePunchRecord(userId: string, date: string): Promise<void> {
-  await db.prepare("DELETE FROM PunchRecord WHERE userId = ? AND date = ?").run(userId, date);
+  await prisma.punchRecord.deleteMany({
+    where: { userId, date }
+  });
 }

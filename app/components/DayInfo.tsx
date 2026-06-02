@@ -7,6 +7,7 @@ interface DayInfoProps {
   diff?: string;
   isOvertime?: boolean;
   showGoal?: boolean;
+  observation?: string;
 }
 
 export function DayInfo({
@@ -15,7 +16,8 @@ export function DayInfo({
   goal,
   diff = "00:00",
   isOvertime = false,
-  showGoal = true
+  showGoal = true,
+  observation
 }: DayInfoProps) {
   const safePunches = punches || [];
   const punchPairsCount = Math.ceil(safePunches.length / 2);
@@ -74,6 +76,15 @@ export function DayInfo({
           </span>
         </div>
       </div>
+
+      {observation && (
+        <div className="info-box" style={{ background: 'rgba(255, 255, 255, 0.02)', marginTop: '12px', textAlign: 'left' }}>
+          <span className="info-label" style={{ fontSize: '0.8rem', opacity: 0.6 }}>Observação</span>
+          <p style={{ margin: '4px 0 0 0', fontSize: '0.95rem', fontWeight: 'normal', color: 'rgba(255, 255, 255, 0.9)', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+            {observation}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

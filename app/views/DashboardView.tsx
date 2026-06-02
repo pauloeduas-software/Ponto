@@ -26,6 +26,7 @@ export function DashboardView({ user, history }: DashboardViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editPunches, setEditPunches] = useState<string[]>([]);
   const [editGoal, setEditGoal] = useState("08:00");
+  const [editObservation, setEditObservation] = useState("");
   const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
 
   const monthStats = useMemo(() => {
@@ -75,7 +76,8 @@ export function DashboardView({ user, history }: DashboardViewProps) {
         goal: editGoal,
         workMins: metrics.workMins.toString(),
         diffMins: metrics.diffMins.toString(),
-        isOvertime: metrics.isOvertime.toString()
+        isOvertime: metrics.isOvertime.toString(),
+        observation: editObservation
       },
       { method: "post" }
     );
@@ -85,6 +87,7 @@ export function DashboardView({ user, history }: DashboardViewProps) {
   const startEditing = () => {
     setEditPunches(selectedDayData ? [...(selectedDayData.punches || [])] : ["", ""]);
     setEditGoal(selectedDayData?.goal || user.goal || "08:00");
+    setEditObservation(selectedDayData?.observation || "");
     setIsEditing(true);
   };
 
@@ -277,7 +280,28 @@ export function DashboardView({ user, history }: DashboardViewProps) {
                   });
                 })()}
               </div>
-              <div className="dashboard-modal-actions-grid">
+              <div className="dashboard-modal-observation-section" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label className="dashboard-modal-label">Observação</label>
+                <textarea
+                  placeholder="Ex: Esqueceu de bater o ponto, consulta médica, viagem..."
+                  value={editObservation}
+                  onChange={e => setEditObservation(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    padding: '10px',
+                    fontSize: '0.9rem',
+                    minHeight: '80px',
+                    resize: 'vertical',
+                    outline: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+              <div className="dashboard-modal-actions-grid" style={{ marginTop: '20px' }}>
                 <button className="btn-register" onClick={handleSaveEdit}>{fetcher.state !== "idle" ? <Loader2 size={16} className="animate-spin" /> : "Salvar"}</button>
                 <button className="btn-register btn-cancel-glass" onClick={() => setIsEditing(false)}>Cancelar</button>
               </div>
@@ -291,6 +315,7 @@ export function DashboardView({ user, history }: DashboardViewProps) {
                 diff={selectedDayData.diff}
                 isOvertime={selectedDayData.isOvertime}
                 showGoal={true}
+                observation={selectedDayData.observation}
               />
               <div className="dashboard-modal-actions-grid-spaced">
                 <button className="btn-register btn-edit-glass" onClick={startEditing}><Edit3 size={16} /> Editar</button>

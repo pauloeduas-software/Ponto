@@ -1,13 +1,14 @@
-import { db } from "./db.server";
+import { prisma } from "./prisma.server";
 import { requireUserId } from "./session.server";
 import { minutesToHHMM, timeToMinutes } from "../utils/time";
-import type { UserDbRow, PunchRecordDbRow } from "../types";
 
 export async function getHomeData(request: Request) {
   const userId = await requireUserId(request);
-  const user = await db.prepare("SELECT * FROM User WHERE id = ?").get(userId) as UserDbRow | undefined;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   const dateStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-  const record = await db.prepare("SELECT * FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, dateStr) as PunchRecordDbRow | undefined;
+  const record = await prisma.punchRecord.findFirst({
+    where: { userId, date: dateStr }
+  });
 
   return {
     user,
@@ -24,22 +25,43 @@ export async function saveHomePunchRecord(request: Request, formData: FormData) 
   const punches = formData.get("punches") as string;
   const workMins = parseInt(formData.get("workMins") as string);
   const diffMins = parseInt(formData.get("diffMins") as string);
-  const isOvertime = formData.get("isOvertime") === "true" ? 1 : 0;
+  const isOvertime = formData.get("isOvertime") === "true";
   const goal = formData.get("goal") as string;
 
   const goalMins = timeToMinutes(goal);
-  const existing = await db.prepare("SELECT id FROM PunchRecord WHERE userId = ? AND date = ?").get(userId, date);
+  const existing = await prisma.punchRecord.findFirst({
+    where: { userId, date }
+  });
 
   if (existing) {
-    await db.prepare(
-      "UPDATE PunchRecord SET punches = ?, workMins = ?, diffMins = ?, isOvertime = ?, goalMins = ? WHERE userId = ? AND date = ?"
-    ).run(punches, workMins, diffMins, isOvertime, goalMins, userId, date);
+    await prisma.punchRecord.update({
+      where: { id: existing.id },
+      data: {
+        punches,
+        workMins,
+        diffMins,
+        isOvertime,
+        goalMins
+      }
+    });
   } else {
-    await db.prepare(
-      "INSERT INTO PunchRecord (id, userId, date, punches, workMins, diffMins, isOvertime, goalMins) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(crypto.randomUUID(), userId, date, punches, workMins, diffMins, isOvertime, goalMins);
+    await prisma.punchRecord.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId,
+        date,
+        punches,
+        workMins,
+        diffMins,
+        isOvertime,
+        goalMins
+      }
+    });
   }
 
   // Atualiza a meta padrão do usuário para que os próximos dias herdem esse valor
-  await db.prepare("UPDATE User SET goal = ? WHERE id = ?").run(goal, userId);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { goal }
+  });
 }

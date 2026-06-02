@@ -31,7 +31,8 @@ export async function action({ request }: { request: Request }) {
       parseInt(formData.get("workMins") as string),
       parseInt(formData.get("diffMins") as string),
       formData.get("isOvertime") === "true" ? 1 : 0,
-      formData.get("goal") as string
+      formData.get("goal") as string,
+      formData.get("observation") as string || undefined
     );
     return { success: true };
   }

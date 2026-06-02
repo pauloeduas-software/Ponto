@@ -1,6 +1,6 @@
-import { db } from "./db.server";
+import { prisma } from "./prisma.server";
 import { minutesToHHMM } from "../utils/time";
-import type { SavedDay, User, Team, UserTeamMembership, PunchRecordDbRow } from "../types";
+import type { SavedDay, User, Team, UserTeamMembership } from "../types";
 
 export async function getAdminData(user: User, selectedManagerTeamId: string | null) {
   const isAdmin = user.role === "admin";
@@ -11,15 +11,6 @@ export async function getAdminData(user: User, selectedManagerTeamId: string | n
     throw new Response("Acesso negado", { status: 403 });
   }
 
-  let employeesQuery = `
-    SELECT u.id, u.username, u.name, u.role, u.avatarUrl, u.teamId, t.name as teamName 
-    FROM User u 
-    LEFT JOIN Team t ON u.teamId = t.id
-  `;
-  let recordsQuery = "SELECT * FROM PunchRecord";
-  let params: string[] = [];
-  let teamName = "Geral";
-
   const activeTeamId =
     selectedManagerTeamId ||
     managerTeams[0]?.teamId ||
@@ -27,69 +18,117 @@ export async function getAdminData(user: User, selectedManagerTeamId: string | n
     (user.userTeams || [])[0]?.teamId ||
     null;
 
-  if (!isAdmin && activeTeamId) {
-    employeesQuery = `
-      SELECT DISTINCT u.id, u.username, u.name, u.role, u.avatarUrl, u.teamId, t.name as teamName
-      FROM User u
-      LEFT JOIN UserTeam ut ON u.id = ut.userId
-      LEFT JOIN Team t ON ut.teamId = t.id OR u.teamId = t.id
-      WHERE ut.teamId = ? OR u.teamId = ?
-    `;
-    recordsQuery = `
-      SELECT DISTINCT r.* FROM PunchRecord r
-      JOIN User u ON r.userId = u.id
-      LEFT JOIN UserTeam ut ON r.userId = ut.userId
-      WHERE ut.teamId = ? OR u.teamId = ?
-    `;
-    params = [activeTeamId, activeTeamId];
-    const team = await db.prepare("SELECT name FROM Team WHERE id = ?").get(activeTeamId) as { name: string } | undefined;
+  let employeesData: any[] = [];
+  let records: any[] = [];
+  let teamName = "Geral";
+
+  if (isAdmin && !selectedManagerTeamId) {
+    employeesData = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+        teamId: true,
+        team: { select: { name: true } },
+        userTeams: {
+          select: {
+            teamId: true,
+            role: true,
+            team: { select: { name: true } }
+          }
+        }
+      }
+    });
+    records = await prisma.punchRecord.findMany();
+  } else if (activeTeamId) {
+    employeesData = await prisma.user.findMany({
+      where: {
+        OR: [
+          { teamId: activeTeamId },
+          { userTeams: { some: { teamId: activeTeamId } } }
+        ]
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        role: true,
+        avatarUrl: true,
+        teamId: true,
+        team: { select: { name: true } },
+        userTeams: {
+          select: {
+            teamId: true,
+            role: true,
+            team: { select: { name: true } }
+          }
+        }
+      }
+    });
+    records = await prisma.punchRecord.findMany({
+      where: {
+        user: {
+          OR: [
+            { teamId: activeTeamId },
+            { userTeams: { some: { teamId: activeTeamId } } }
+          ]
+        }
+      }
+    });
+    const team = await prisma.team.findUnique({
+      where: { id: activeTeamId },
+      select: { name: true }
+    });
     teamName = team?.name || "Equipe";
-  } else if (!isAdmin) {
-    employeesQuery += " WHERE 1=0";
-    recordsQuery += " WHERE 1=0";
+  } else {
+    employeesData = [];
+    records = [];
     teamName = "Sem Equipe";
   }
 
-  const employees = await db.prepare(employeesQuery).all(...params) as (User & { teamName?: string | null })[];
-
-  const allUserTeams = await db.prepare(`
-    SELECT ut.userId, ut.teamId, ut.role, t.name as teamName
-    FROM UserTeam ut
-    JOIN Team t ON ut.teamId = t.id
-  `).all() as { userId: string; teamId: string; role: "manager" | "employee"; teamName: string }[];
-
-  const userTeamsMap: Record<string, UserTeamMembership[]> = {};
-  for (const link of allUserTeams) {
-    if (!userTeamsMap[link.userId]) userTeamsMap[link.userId] = [];
-    userTeamsMap[link.userId].push({
-      teamId: link.teamId,
-      teamName: link.teamName,
-      role: link.role,
-    });
-  }
-  employees.forEach(emp => {
-    emp.userTeams = userTeamsMap[emp.id] || [];
-  });
-
-  const allRecords = await db.prepare(recordsQuery).all(...params) as PunchRecordDbRow[];
+  const employees: (User & { teamName?: string | null })[] = employeesData.map(emp => ({
+    id: emp.id,
+    username: emp.username,
+    name: emp.name,
+    role: emp.role as any,
+    avatarUrl: emp.avatarUrl || undefined,
+    teamId: emp.teamId || undefined,
+    teamName: emp.team?.name || undefined,
+    userTeams: emp.userTeams.map((ut: any) => ({
+      teamId: ut.teamId,
+      role: ut.role as any,
+      teamName: ut.team.name
+    }))
+  }));
 
   const historyData: Record<string, SavedDay[]> = {};
-  allRecords.forEach(r => {
+  records.forEach(r => {
+    if (!r.userId) return;
     if (!historyData[r.userId]) historyData[r.userId] = [];
     historyData[r.userId].push({
       date: r.date,
       punches: JSON.parse(r.punches),
       workMins: r.workMins,
       diffMins: r.diffMins,
-      isOvertime: r.isOvertime === 1,
+      isOvertime: r.isOvertime,
       goalMins: r.goalMins || 480,
       goal: minutesToHHMM(r.goalMins || 480),
       worked: minutesToHHMM(r.workMins),
       diff: minutesToHHMM(Math.abs(r.diffMins)),
+      observation: r.observation || undefined,
     });
   });
 
-  const teams = await db.prepare("SELECT * FROM Team ORDER BY name").all() as Team[];
+  const teamsData = await prisma.team.findMany({
+    orderBy: { name: "asc" }
+  });
+  const teams: Team[] = teamsData.map(t => ({
+    id: t.id,
+    name: t.name
+  }));
+
   const activeManagerTeamId = isManager
     ? selectedManagerTeamId || managerTeams[0]?.teamId || null
     : null;

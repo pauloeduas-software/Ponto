@@ -381,6 +381,12 @@ export function AdminView({
                       </span>
                     </div>
                   </div>
+                  {record.data.observation && (
+                    <div className="admin-summary-observation" style={{ marginTop: '8px', padding: '8px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '4px', textAlign: 'left' }}>
+                      <span style={{ fontSize: '0.75rem', opacity: 0.6, display: 'block' }}>Observação</span>
+                      <span style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.8)', whiteSpace: 'pre-wrap' }}>{record.data.observation}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -397,6 +403,7 @@ export function AdminView({
               diff={selectedDayUserData.diff}
               isOvertime={selectedDayUserData.isOvertime}
               showGoal={false}
+              observation={selectedDayUserData.observation}
             />
           ) : (
             <p className="no-records-centered">

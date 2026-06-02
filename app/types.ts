@@ -43,6 +43,7 @@ export interface SavedDay {
   entry?: string;
   exit?: string;
   breaks?: {start: string, end: string}[];
+  observation?: string;
 }
 
 export interface UserDbRow {
@@ -65,4 +66,5 @@ export interface PunchRecordDbRow {
   isOvertime: number;
   goalMins: number;
   userId: string;
+  observation?: string;
 }
