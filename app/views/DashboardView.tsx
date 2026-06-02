@@ -1,9 +1,8 @@
-import { useState, useMemo } from "react";
 import {ChevronLeft, ChevronRight, Calendar as CalendarIcon, Timer, TrendingDown, TrendingUp, Trash2, Edit3, Plus, Loader2, Clock, ArrowRight } from "lucide-react";
 import { useFetcher } from "react-router";
+import { useDashboardView } from "../hooks/useDashboardView";
 import { type SavedDay } from "../types";
 import { minutesToTime, timeToMinutes, minutesToHHMM, formatTimeInput } from "../utils/time";
-import { calculatePunchMetrics } from "../domain/punchCalculator";
 import { Modal } from "../components/Modal";
 import { CalendarGrid } from "../components/CalendarGrid";
 import { CalendarVertical } from "../components/CalendarVertical";
@@ -20,76 +19,20 @@ interface DashboardViewProps {
 export function DashboardView({ user, history }: DashboardViewProps) {
   const fetcher = useFetcher();
 
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDateStr, setSelectedDateStr] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }));
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editPunches, setEditPunches] = useState<string[]>([]);
-  const [editGoal, setEditGoal] = useState("08:00");
-  const [editObservation, setEditObservation] = useState("");
-  const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
+  const { state, actions, computed } = useDashboardView(user, history, fetcher);
 
-  const monthStats = useMemo(() => {
-    const monthStr = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-    const filtered = history.filter(h => h.date.startsWith(monthStr));
-    const totalMins = filtered.reduce((acc, h) => acc + h.workMins, 0);
-    const totalDiff = filtered.reduce((acc, h) => acc + h.diffMins, 0);
-    return {
-      worked: minutesToHHMM(totalMins),
-      balance: minutesToHHMM(Math.abs(totalDiff)),
-      isPositive: totalDiff >= 0,
-      count: filtered.length
-    };
-  }, [history, currentDate]);
+  const {
+    currentDate, selectedDateStr, isModalOpen, isEditing,
+    editPunches, editGoal, editObservation, calendarView
+  } = state;
 
-  const selectedDayData = useMemo(() => history.find(h => h.date === selectedDateStr), [history, selectedDateStr]);
+  const {
+    setIsModalOpen, setIsEditing, setEditGoal, setEditObservation,
+    setCalendarView, changeMonth, handleDayClick, updatePunch,
+    handleSaveEdit, startEditing
+  } = actions;
 
-  const changeMonth = (offset: number) => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
-  };
-
-  const handleDayClick = (dateStr: string) => {
-    setSelectedDateStr(dateStr);
-    setIsModalOpen(true);
-    setIsEditing(false);
-  };
-
-  const updatePunch = (index: number, value: string) => {
-    const newPunches = [...editPunches];
-    newPunches[index] = value;
-    setEditPunches(newPunches);
-  };
-
-  const handleSaveEdit = () => {
-    let cleanedPunches = [...editPunches];
-    while (cleanedPunches.length > 0 && cleanedPunches[cleanedPunches.length - 1] === "") {
-      cleanedPunches.pop();
-    }
-
-    const metrics = calculatePunchMetrics(cleanedPunches, editGoal);
-
-    fetcher.submit(
-      {
-        _action: "save",
-        date: selectedDateStr,
-        punches: JSON.stringify(cleanedPunches),
-        goal: editGoal,
-        workMins: metrics.workMins.toString(),
-        diffMins: metrics.diffMins.toString(),
-        isOvertime: metrics.isOvertime.toString(),
-        observation: editObservation
-      },
-      { method: "post" }
-    );
-    setIsEditing(false);
-  };
-
-  const startEditing = () => {
-    setEditPunches(selectedDayData ? [...(selectedDayData.punches || [])] : ["", ""]);
-    setEditGoal(selectedDayData?.goal || user.goal || "08:00");
-    setEditObservation(selectedDayData?.observation || "");
-    setIsEditing(true);
-  };
+  const { monthStats, selectedDayData } = computed;
 
   return (
     <div className="container">
