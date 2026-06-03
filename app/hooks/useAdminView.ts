@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router";
 import { type SavedDay } from "../types";
 import { minutesToHHMM } from "../utils/time";
 
@@ -8,11 +9,21 @@ export function useAdminView(
   employees: any[],
   historyData: Record<string, SavedDay[]>
 ) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlMonth = searchParams.get("month");
+
   const userFirstTeamId = user.teamId || (user.userTeams && user.userTeams.length > 0 ? user.userTeams[0].teamId : null) || "todos";
   
   const [selectedTeamId, setSelectedTeamId] = useState<string>(isAdmin ? userFirstTeamId : "todos");
   const [selectedUserId, setSelectedUserId] = useState<string>("todos");
-  const [currentDate, setCurrentDate] = useState(new Date());
+  
+  const [currentDate, setCurrentDate] = useState(() => {
+    if (urlMonth) {
+      const [year, month] = urlMonth.split("-").map(Number);
+      return new Date(year, month - 1, 1);
+    }
+    return new Date();
+  });
   
   const [selectedDateStr, setSelectedDateStr] = useState(
     new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
@@ -23,8 +34,17 @@ export function useAdminView(
   const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
 
   const changeMonth = useCallback((offset: number) => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
-  }, []);
+    setCurrentDate(prev => {
+      const nextDate = new Date(prev.getFullYear(), prev.getMonth() + offset, 1);
+      const nextMonthStr = `${nextDate.getFullYear()}-${(nextDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("month", nextMonthStr);
+      setSearchParams(newParams);
+      
+      return nextDate;
+    });
+  }, [searchParams, setSearchParams]);
 
   const handleDayClick = useCallback((dateStr: string) => {
     setSelectedDateStr(dateStr);

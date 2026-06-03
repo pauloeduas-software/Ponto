@@ -1,10 +1,21 @@
 import { useState, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router";
 import { type SavedDay } from "../types";
 import { minutesToHHMM, formatTimeInput } from "../utils/time";
 import { calculatePunchMetrics } from "../domain/punchCalculator";
 
 export function useDashboardView(user: any, history: SavedDay[], fetcher: any) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlMonth = searchParams.get("month");
+
+  const [currentDate, setCurrentDate] = useState(() => {
+    if (urlMonth) {
+      const [year, month] = urlMonth.split("-").map(Number);
+      return new Date(year, month - 1, 1);
+    }
+    return new Date();
+  });
+  
   const [selectedDateStr, setSelectedDateStr] = useState(
     new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
   );
@@ -33,8 +44,17 @@ export function useDashboardView(user: any, history: SavedDay[], fetcher: any) {
   [history, selectedDateStr]);
 
   const changeMonth = useCallback((offset: number) => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
-  }, []);
+    setCurrentDate(prev => {
+      const nextDate = new Date(prev.getFullYear(), prev.getMonth() + offset, 1);
+      const nextMonthStr = `${nextDate.getFullYear()}-${(nextDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("month", nextMonthStr);
+      setSearchParams(newParams);
+      
+      return nextDate;
+    });
+  }, [searchParams, setSearchParams]);
 
   const handleDayClick = useCallback((dateStr: string) => {
     setSelectedDateStr(dateStr);

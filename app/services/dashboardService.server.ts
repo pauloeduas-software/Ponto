@@ -2,9 +2,12 @@ import { prisma } from "./prisma.server";
 import { minutesToHHMM, timeToMinutes } from "../utils/time";
 import type { SavedDay } from "../types";
 
-export async function getDashboardHistory(userId: string): Promise<SavedDay[]> {
+export async function getDashboardHistory(userId: string, monthStr: string): Promise<SavedDay[]> {
   const records = await prisma.punchRecord.findMany({
-    where: { userId },
+    where: { 
+      userId,
+      date: { startsWith: monthStr }
+    },
     orderBy: { date: "desc" },
   });
 

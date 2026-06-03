@@ -2,7 +2,7 @@ import { prisma } from "./prisma.server";
 import { minutesToHHMM } from "../utils/time";
 import type { SavedDay, User, Team, UserTeamMembership } from "../types";
 
-export async function getAdminData(user: User, selectedManagerTeamId: string | null) {
+export async function getAdminData(user: User, selectedManagerTeamId: string | null, monthStr: string) {
   const isAdmin = user.role === "admin";
   const managerTeams = (user.userTeams || []).filter((ut: UserTeamMembership) => ut.role === "manager");
   const isManager = managerTeams.length > 0;
@@ -11,7 +11,7 @@ export async function getAdminData(user: User, selectedManagerTeamId: string | n
 
   const activeTeamId = resolveActiveTeamId(user, managerTeams, selectedManagerTeamId);
 
-  const { employeesData, records, teamName } = await fetchDashboardData(isAdmin, selectedManagerTeamId, activeTeamId);
+  const { employeesData, records, teamName } = await fetchDashboardData(isAdmin, selectedManagerTeamId, activeTeamId, monthStr);
 
   const employees = mapEmployeesToDTO(employeesData);
   const historyData = buildHistoryData(records);
@@ -54,10 +54,12 @@ function resolveActiveTeamId(user: User, managerTeams: UserTeamMembership[], sel
   );
 }
 
-async function fetchDashboardData(isAdmin: boolean, selectedManagerTeamId: string | null, activeTeamId: string | null) {
+async function fetchDashboardData(isAdmin: boolean, selectedManagerTeamId: string | null, activeTeamId: string | null, monthStr: string) {
   if (isAdmin && !selectedManagerTeamId) {
     const employeesData = await prisma.user.findMany({ select: buildUserSelect() });
-    const records = await prisma.punchRecord.findMany();
+    const records = await prisma.punchRecord.findMany({
+      where: { date: { startsWith: monthStr } }
+    });
     return { employeesData, records, teamName: "Geral" };
   } 
   
@@ -68,7 +70,10 @@ async function fetchDashboardData(isAdmin: boolean, selectedManagerTeamId: strin
     });
     
     const records = await prisma.punchRecord.findMany({
-      where: { user: buildTeamFilter(activeTeamId) }
+      where: { 
+        user: buildTeamFilter(activeTeamId),
+        date: { startsWith: monthStr }
+      }
     });
     
     const team = await prisma.team.findUnique({

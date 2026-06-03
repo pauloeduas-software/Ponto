@@ -6,7 +6,9 @@ import { DashboardView } from "../views/DashboardView";
 export async function loader({ request }: { request: Request }) {
   const userId = await requireUserId(request);
   const user = await getUser(request);
-  return { user, history: await getDashboardHistory(userId) };
+  const url = new URL(request.url);
+  const monthStr = url.searchParams.get("month") || new Date().toISOString().slice(0, 7);
+  return { user, history: await getDashboardHistory(userId, monthStr) };
 }
 
 export async function action({ request }: { request: Request }) {
