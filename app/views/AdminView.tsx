@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
 import { User as UserIcon, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Timer, TrendingDown, TrendingUp, Filter, Layers, Users, Calculator, Wallet } from "lucide-react";
+import { useAdminView } from "../hooks/useAdminView";
 import { useNavigate } from "react-router";
 import { minutesToHHMM } from "../utils/time";
 import { Modal } from "../components/Modal";
@@ -38,71 +38,22 @@ export function AdminView({
 }: AdminViewProps) {
   const navigate = useNavigate();
 
-  const userFirstTeamId = user.teamId || (user.userTeams && user.userTeams.length > 0 ? user.userTeams[0].teamId : null) || "todos";
-  const [selectedTeamId, setSelectedTeamId] = useState<string>(isAdmin ? userFirstTeamId : "todos");
-  const [selectedUserId, setSelectedUserId] = useState<string>("todos");
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDateStr, setSelectedDateStr] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }));
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isTeamBalanceModalOpen, setIsTeamBalanceModalOpen] = useState(false);
-  const [calendarView, setCalendarView] = useState<'grid' | 'list'>('grid');
+  const { state, actions, computed } = useAdminView(user, isAdmin, employees, historyData);
+  
+  const {
+    selectedTeamId, selectedUserId, currentDate, selectedDateStr,
+    isModalOpen, isTeamBalanceModalOpen, calendarView
+  } = state;
+  
+  const {
+    setSelectedTeamId, setSelectedUserId, setIsModalOpen,
+    setIsTeamBalanceModalOpen, setCalendarView, changeMonth, handleDayClick
+  } = actions;
 
-  const changeMonth = (offset: number) => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
-  };
-
-  const handleDayClick = (dateStr: string) => {
-    setSelectedDateStr(dateStr);
-    setIsModalOpen(true);
-  };
-
-  const filteredEmployees = useMemo(() => {
-    if (selectedTeamId === "todos") return employees;
-    return employees.filter(emp => 
-      emp.teamId === selectedTeamId || 
-      (emp.userTeams && emp.userTeams.some((ut: any) => ut.teamId === selectedTeamId))
-    );
-  }, [employees, selectedTeamId]);
-
-  const selectedDayGlobalData = useMemo(() => {
-    if (selectedUserId !== "todos") return null;
-    return filteredEmployees.map(emp => {
-      const dayRecord = (historyData[emp.id] || []).find(h => h.date === selectedDateStr);
-      return dayRecord ? { user: emp, data: dayRecord } : null;
-    }).filter(r => r !== null) as { user: any, data: SavedDay }[];
-  }, [selectedDateStr, selectedUserId, filteredEmployees, historyData]);
-
-  const selectedDayUserData = useMemo(() => {
-    if (selectedUserId === "todos") return null;
-    return (historyData[selectedUserId] || []).find(h => h.date === selectedDateStr);
-  }, [selectedDateStr, selectedUserId, historyData]);
-
-  const recordCount = (dateStr: string) => {
-    return filteredEmployees.filter(emp => (historyData[emp.id] || []).some(h => h.date === dateStr)).length;
-  };
-
-  const getBalances = (userId: string) => {
-    const userRecords = historyData[userId] || [];
-    const monthStr = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-
-    const monthly = userRecords
-      .filter(r => r.date.startsWith(monthStr))
-      .reduce((acc, r) => acc + r.diffMins, 0);
-
-    return { monthly };
-  };
-
-  const selectedUserBalances = useMemo(() => {
-    if (selectedUserId === "todos") return null;
-    return getBalances(selectedUserId);
-  }, [selectedUserId, historyData, currentDate]);
-
-  const teamBalances = useMemo(() => {
-    return filteredEmployees.map(emp => ({
-      ...emp,
-      balances: getBalances(emp.id)
-    })).sort((a, b) => b.balances.monthly - a.balances.monthly);
-  }, [filteredEmployees, historyData, currentDate]);
+  const {
+    filteredEmployees, selectedDayGlobalData, selectedDayUserData,
+    recordCount, selectedUserBalances, teamBalances
+  } = computed;
 
   return (
     <div className="container">
@@ -126,13 +77,26 @@ export function AdminView({
                 >Detalhado</button>
               </div>
             </div>
-            <button
-              className="btn-saldos-new"
-              onClick={() => setIsTeamBalanceModalOpen(true)}
-            >
-              <Wallet size={16} />
-              <span>Saldos</span>
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn-saldos-new"
+                onClick={() => setIsTeamBalanceModalOpen(true)}
+              >
+                <Wallet size={16} />
+                <span>Saldos</span>
+              </button>
+
+              {selectedUserId !== "todos" && (
+                <a
+                  href={`/api/export-punches?month=${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}&userId=${selectedUserId}`}
+                  className="btn-saldos-new"
+                  style={{ textDecoration: 'none' }}
+                  title="Exportar colaborador selecionado deste mês"
+                >
+                  Exportar
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
@@ -345,9 +309,8 @@ export function AdminView({
                       ? Array.from({ length: Math.ceil((record.data.punches as string[]).length / 2) }).map((_, i) => (
                         <div
                           key={i}
-                          className={`admin-summary-punch-row ${
-                            i < Math.ceil((record.data.punches as string[]).length / 2) - 1 ? "has-border" : ""
-                          }`}
+                          className={`admin-summary-punch-row ${i < Math.ceil((record.data.punches as string[]).length / 2) - 1 ? "has-border" : ""
+                            }`}
                         >
                           <div className="admin-summary-col">
                             <span className="admin-summary-meta">Entrada</span>
@@ -381,6 +344,12 @@ export function AdminView({
                       </span>
                     </div>
                   </div>
+                  {record.data.observation && (
+                    <div className="admin-summary-observation" style={{ marginTop: '8px', padding: '8px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '4px', textAlign: 'left' }}>
+                      <span style={{ fontSize: '0.75rem', opacity: 0.6, display: 'block' }}>Observação</span>
+                      <span style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.8)', whiteSpace: 'pre-wrap' }}>{record.data.observation}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -397,6 +366,7 @@ export function AdminView({
               diff={selectedDayUserData.diff}
               isOvertime={selectedDayUserData.isOvertime}
               showGoal={false}
+              observation={selectedDayUserData.observation}
             />
           ) : (
             <p className="no-records-centered">

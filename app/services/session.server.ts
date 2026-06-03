@@ -1,5 +1,5 @@
 import { createCookieSessionStorage, redirect } from "react-router";
-import { db } from "./db.server";
+import { prisma } from "./prisma.server";
 import type { User } from "../types";
 
 const sessionSecret = process.env.SESSION_SECRET;
@@ -36,20 +36,45 @@ export async function getUser(request: Request): Promise<User | null> {
   if (!userId) return null;
 
   try {
-    const user = await db.prepare("SELECT id, username, name, role, goal, avatarUrl, teamId FROM User WHERE id = ?").get(userId) as Omit<User, "userTeams"> | undefined;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        role: true,
+        goal: true,
+        avatarUrl: true,
+        teamId: true,
+        userTeams: {
+          select: {
+            teamId: true,
+            role: true,
+            team: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
+      }
+    });
+
     if (!user) return null;
 
-    // Busca todos os vínculos de equipe do usuário (para suporte a múltiplas equipes)
-    const userTeams = await db.prepare(`
-      SELECT ut.teamId, ut.role, t.name as teamName
-      FROM UserTeam ut
-      JOIN Team t ON ut.teamId = t.id
-      WHERE ut.userId = ?
-    `).all(userId) as User["userTeams"];
-
     return {
-      ...user,
-      userTeams: userTeams || [],
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      role: user.role as any,
+      goal: user.goal || undefined,
+      avatarUrl: user.avatarUrl || undefined,
+      teamId: user.teamId || undefined,
+      userTeams: user.userTeams.map(ut => ({
+        teamId: ut.teamId,
+        role: ut.role as any,
+        teamName: ut.team.name
+      }))
     };
   } catch {
     return null;

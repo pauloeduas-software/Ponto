@@ -10,8 +10,10 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "@react-router/node": "7.14.0",
-    "@react-router/serve": "7.14.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@react-router/node": "7.14.2",
+    "@react-router/serve": "7.14.2",
     "bcryptjs": "^3.0.3",
     "cookie": "^1.1.1",
     "isbot": "^5.1.36",
@@ -19,10 +21,13 @@
     "pg": "^8.21.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router": "7.14.0"
+    "react-router": "7.14.2",
+    "write-excel-file": "^4.0.7",
+    "prisma": "^7.8.0",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
-    "@react-router/dev": "7.14.0",
+    "@react-router/dev": "7.14.2",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22",
     "@types/pg": "^8.20.0",

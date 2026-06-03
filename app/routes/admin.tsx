@@ -15,7 +15,8 @@ export async function loader({ request }: { request: Request }) {
   
   const url = new URL(request.url);
   const selectedManagerTeamId = url.searchParams.get("teamFilter") || null;
-  return getAdminData(user, selectedManagerTeamId);
+  const monthStr = url.searchParams.get("month") || new Date().toISOString().slice(0, 7);
+  return getAdminData(user, selectedManagerTeamId, monthStr);
 }
 
 export default function Admin() {
