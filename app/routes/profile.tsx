@@ -1,5 +1,5 @@
 import { useLoaderData, redirect } from "react-router";
-import { db } from "../services/db.server";
+import { prisma } from "../services/prisma.server";
 import { requireUserId, getUser } from "../services/session.server";
 import { ProfileView } from "../views/ProfileView";
 
@@ -10,7 +10,10 @@ export async function loader({ request }: { request: Request }) {
   
   let team = null;
   if (user.teamId) {
-    team = await db.prepare("SELECT name FROM Team WHERE id = ?").get(user.teamId);
+    team = await prisma.team.findUnique({
+      where: { id: user.teamId },
+      select: { name: true }
+    });
   }
 
   return { 
@@ -32,13 +35,19 @@ export async function action({ request }: { request: Request }) {
 
   if (actionType === "updateAvatar") {
     const avatarData = formData.get("avatar") as string;
-    await db.prepare("UPDATE User SET avatarUrl = ? WHERE id = ?").run(avatarData, userId);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: avatarData }
+    });
     return { success: true, message: "Foto atualizada!" };
   }
 
   if (actionType === "updateName") {
     const name = formData.get("name") as string;
-    await db.prepare("UPDATE User SET name = ? WHERE id = ?").run(name, userId);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { name }
+    });
     return { success: true, message: "Nome atualizado!" };
   }
 

@@ -1,26 +1,8 @@
 import "./app.css";
-import {
-  isRouteErrorResponse,
-  Links,
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-  Link,
-  useLocation,
-  useRouteLoaderData,
-  useNavigation
-} from "react-router";
+import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, Link, useLocation, useRouteLoaderData, useNavigation } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
 import { useEffect, useState, useMemo } from "react";
-import {
-  Clock,
-  Shield,
-  CalendarClock,
-  LayoutDashboard,
-  Calculator,
-  User as UserIcon
-} from "lucide-react";
+import { Clock, Shield, CalendarClock, LayoutDashboard, Calculator, User as UserIcon } from "lucide-react";
 import { getUser } from "./services/session.server";
 import { Avatar } from "./components/Avatar";
 

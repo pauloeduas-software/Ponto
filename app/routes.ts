@@ -10,5 +10,6 @@ export default [
     route("logout", "routes/logout.tsx"),
     route("perfil", "routes/profile.tsx"),
     route("simulador", "routes/simulador.tsx"),
+    route("api/export-punches", "routes/api.export-punches.tsx"),
     route("*", "routes/$.tsx"), // Rota curinga: captura URLs não mapeadas (ex: Chrome DevTools)
 ] satisfies RouteConfig;

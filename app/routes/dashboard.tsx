@@ -6,7 +6,9 @@ import { DashboardView } from "../views/DashboardView";
 export async function loader({ request }: { request: Request }) {
   const userId = await requireUserId(request);
   const user = await getUser(request);
-  return { user, history: await getDashboardHistory(userId) };
+  const url = new URL(request.url);
+  const monthStr = url.searchParams.get("month") || new Date().toISOString().slice(0, 7);
+  return { user, history: await getDashboardHistory(userId, monthStr) };
 }
 
 export async function action({ request }: { request: Request }) {
@@ -31,7 +33,8 @@ export async function action({ request }: { request: Request }) {
       parseInt(formData.get("workMins") as string),
       parseInt(formData.get("diffMins") as string),
       formData.get("isOvertime") === "true" ? 1 : 0,
-      formData.get("goal") as string
+      formData.get("goal") as string,
+      formData.get("observation") as string || undefined
     );
     return { success: true };
   }
