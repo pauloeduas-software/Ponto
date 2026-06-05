@@ -1,17 +1,21 @@
 import { prisma } from "./prisma.server";
 import { minutesToHHMM, timeToMinutes } from "../utils/time";
+import { getCachedOrFetch, invalidateCache } from "../utils/cache.server";
 import type { SavedDay } from "../types";
 
 export async function getDashboardHistory(userId: string, monthStr: string): Promise<SavedDay[]> {
-  const records = await prisma.punchRecord.findMany({
-    where: { 
-      userId,
-      date: { startsWith: monthStr }
-    },
-    orderBy: { date: "desc" },
-  });
+  const cacheKey = `dashboard_history_${userId}_${monthStr}`;
 
-  return records.map(r => ({
+  return getCachedOrFetch(cacheKey, async () => {
+    const records = await prisma.punchRecord.findMany({
+      where: { 
+        userId,
+        date: { startsWith: monthStr }
+      },
+      orderBy: { date: "desc" },
+    });
+
+    return records.map(r => ({
     date: r.date,
     punches: JSON.parse(r.punches),
     workMins: r.workMins,
@@ -22,7 +26,8 @@ export async function getDashboardHistory(userId: string, monthStr: string): Pro
     worked: minutesToHHMM(r.workMins),
     diff: minutesToHHMM(Math.abs(r.diffMins)),
     observation: r.observation || undefined,
-  }));
+    }));
+  });
 }
 
 export async function savePunchRecord(
@@ -67,10 +72,14 @@ export async function savePunchRecord(
       }
     });
   }
+  
+  invalidateCache();
 }
 
 export async function deletePunchRecord(userId: string, date: string): Promise<void> {
   await prisma.punchRecord.deleteMany({
     where: { userId, date }
   });
+  
+  invalidateCache();
 }

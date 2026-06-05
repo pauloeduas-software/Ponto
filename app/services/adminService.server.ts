@@ -1,5 +1,6 @@
 import { prisma } from "./prisma.server";
 import { minutesToHHMM } from "../utils/time";
+import { getCachedOrFetch } from "../utils/cache.server";
 import type { SavedDay, User, Team, UserTeamMembership } from "../types";
 
 export async function getAdminData(user: User, selectedManagerTeamId: string | null, monthStr: string) {
@@ -55,36 +56,40 @@ function resolveActiveTeamId(user: User, managerTeams: UserTeamMembership[], sel
 }
 
 async function fetchDashboardData(isAdmin: boolean, selectedManagerTeamId: string | null, activeTeamId: string | null, monthStr: string) {
-  if (isAdmin && !selectedManagerTeamId) {
-    const employeesData = await prisma.user.findMany({ select: buildUserSelect() });
-    const records = await prisma.punchRecord.findMany({
-      where: { date: { startsWith: monthStr } }
-    });
-    return { employeesData, records, teamName: "Geral" };
-  } 
+  const cacheKey = `admin_dashboard_${isAdmin}_${selectedManagerTeamId}_${activeTeamId}_${monthStr}`;
   
-  if (activeTeamId) {
-    const employeesData = await prisma.user.findMany({
-      where: buildTeamFilter(activeTeamId),
-      select: buildUserSelect()
-    });
+  return getCachedOrFetch(cacheKey, async () => {
+    if (isAdmin && !selectedManagerTeamId) {
+      const employeesData = await prisma.user.findMany({ select: buildUserSelect() });
+      const records = await prisma.punchRecord.findMany({
+        where: { date: { startsWith: monthStr } }
+      });
+      return { employeesData, records, teamName: "Geral" };
+    } 
     
-    const records = await prisma.punchRecord.findMany({
-      where: { 
-        user: buildTeamFilter(activeTeamId),
-        date: { startsWith: monthStr }
-      }
-    });
+    if (activeTeamId) {
+      const employeesData = await prisma.user.findMany({
+        where: buildTeamFilter(activeTeamId),
+        select: buildUserSelect()
+      });
+      
+      const records = await prisma.punchRecord.findMany({
+        where: { 
+          user: buildTeamFilter(activeTeamId),
+          date: { startsWith: monthStr }
+        }
+      });
+      
+      const team = await prisma.team.findUnique({
+        where: { id: activeTeamId },
+        select: { name: true }
+      });
+      
+      return { employeesData, records, teamName: team?.name || "Equipe" };
+    } 
     
-    const team = await prisma.team.findUnique({
-      where: { id: activeTeamId },
-      select: { name: true }
-    });
-    
-    return { employeesData, records, teamName: team?.name || "Equipe" };
-  } 
-  
-  return { employeesData: [], records: [], teamName: "Sem Equipe" };
+    return { employeesData: [], records: [], teamName: "Sem Equipe" };
+  });
 }
 
 function buildUserSelect() {

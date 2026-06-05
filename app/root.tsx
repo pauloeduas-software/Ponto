@@ -1,5 +1,5 @@
 import "./app.css";
-import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, Link, useLocation, useRouteLoaderData, useNavigation } from "react-router";
+import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, Link, useLocation, useRouteLoaderData, useNavigation, useRevalidator } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
 import { useEffect, useState, useMemo } from "react";
 import { Clock, Shield, CalendarClock, LayoutDashboard, Calculator, User as UserIcon } from "lucide-react";
@@ -132,6 +132,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { revalidate } = useRevalidator();
+
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        revalidate();
+      }
+    }
+
+    function onFocus() {
+      revalidate();
+    }
+
+    window.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      window.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [revalidate]);
+
   return <Outlet />;
 }
 

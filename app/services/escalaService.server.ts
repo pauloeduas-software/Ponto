@@ -1,18 +1,22 @@
 import { prisma } from "./prisma.server";
 import type { Shift, User, Team, UserTeamMembership } from "../types";
+import { getCachedOrFetch, invalidateCache } from "../utils/cache.server";
 
 export async function getEscalaData(user: User, selectedTeamParam: string | null) {
-  const isAdmin = user.role === "admin";
-  const userTeams = (user.userTeams || []) as UserTeamMembership[];
-  const managerTeams = userTeams.filter((ut: UserTeamMembership) => ut.role === "manager");
+  const cacheKey = `escala_data_${user.id}_${selectedTeamParam || 'none'}`;
 
-  const activeTeamId = selectedTeamParam || userTeams[0]?.teamId || user.teamId || null;
-  const activeTeamRole = userTeams.find((ut: UserTeamMembership) => ut.teamId === activeTeamId)?.role || null;
-  const canEditActiveTeam = isAdmin || activeTeamRole === "manager";
+  return getCachedOrFetch(cacheKey, async () => {
+    const isAdmin = user.role === "admin";
+    const userTeams = (user.userTeams || []) as UserTeamMembership[];
+    const managerTeams = userTeams.filter((ut: UserTeamMembership) => ut.role === "manager");
 
-  let employeesData: any[] = [];
-  let shiftsData: any[] = [];
-  let teamName = "Geral";
+    const activeTeamId = selectedTeamParam || userTeams[0]?.teamId || user.teamId || null;
+    const activeTeamRole = userTeams.find((ut: UserTeamMembership) => ut.teamId === activeTeamId)?.role || null;
+    const canEditActiveTeam = isAdmin || activeTeamRole === "manager";
+
+    let employeesData: any[] = [];
+    let shiftsData: any[] = [];
+    let teamName = "Geral";
 
   if (isAdmin && !selectedTeamParam) {
     employeesData = await prisma.user.findMany({
@@ -129,10 +133,11 @@ export async function getEscalaData(user: User, selectedTeamParam: string | null
     name: t.name
   }));
 
-  return {
-    user, employees, initialShifts: shifts, teamName, teams,
-    userTeams, managerTeams, isAdmin, activeTeamId, canEditActiveTeam,
-  };
+    return {
+      user, employees, initialShifts: shifts, teamName, teams,
+      userTeams, managerTeams, isAdmin, activeTeamId, canEditActiveTeam,
+    };
+  });
 }
 
 export async function saveShifts(
@@ -178,5 +183,6 @@ export async function saveShifts(
     })
   ]);
 
+  invalidateCache();
   return { success: true };
 }

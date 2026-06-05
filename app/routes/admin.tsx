@@ -1,12 +1,9 @@
 import { useLoaderData, redirect } from "react-router";
-import type { ShouldRevalidateFunction } from "react-router";
+
 import { requireUserId, getUser } from "../services/session.server";
 import { getAdminData } from "../services/adminService.server";
 import { AdminView } from "../views/AdminView";
 
-export const shouldRevalidate: ShouldRevalidateFunction = ({ currentUrl, nextUrl }) => {
-  return currentUrl.pathname !== nextUrl.pathname;
-};
 
 export async function loader({ request }: { request: Request }) {
   await requireUserId(request);

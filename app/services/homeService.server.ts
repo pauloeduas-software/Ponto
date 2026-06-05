@@ -1,21 +1,26 @@
 import { prisma } from "./prisma.server";
 import { requireUserId } from "./session.server";
 import { minutesToHHMM, timeToMinutes } from "../utils/time";
+import { getCachedOrFetch, invalidateCache } from "../utils/cache.server";
 
 export async function getHomeData(request: Request) {
   const userId = await requireUserId(request);
-  const user = await prisma.user.findUnique({ where: { id: userId } });
   const dateStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-  const record = await prisma.punchRecord.findFirst({
-    where: { userId, date: dateStr }
-  });
+  const cacheKey = `home_data_${userId}_${dateStr}`;
 
-  return {
-    user,
-    initialPunches: record ? JSON.parse(record.punches) : [],
-    initialGoal: record?.goalMins ? minutesToHHMM(record.goalMins) : user?.goal || "08:00",
-    dateStr,
-  };
+  return getCachedOrFetch(cacheKey, async () => {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const record = await prisma.punchRecord.findFirst({
+      where: { userId, date: dateStr }
+    });
+
+    return {
+      user,
+      initialPunches: record ? JSON.parse(record.punches) : [],
+      initialGoal: record?.goalMins ? minutesToHHMM(record.goalMins) : user?.goal || "08:00",
+      dateStr,
+    };
+  });
 }
 
 export async function saveHomePunchRecord(request: Request, formData: FormData) {
@@ -64,4 +69,6 @@ export async function saveHomePunchRecord(request: Request, formData: FormData) 
     where: { id: userId },
     data: { goal }
   });
+  
+  invalidateCache();
 }
