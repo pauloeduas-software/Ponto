@@ -51,89 +51,112 @@ export function ProfileView({ user, team }: ProfileViewProps) {
   };
 
   return (
-    <div className="container">
-      <div className="card">
-        <div className="header">
-          <div>
-            <h1>Minha Conta</h1>
-            <p className="subtitle">Configurações de Perfil</p>
-          </div>
-        </div>
+    <div className="page-shell">
 
-        <div className="profile-layout-container">
-          <div className="profile-user-card">
-            <div className="profile-avatar-wrapper">
-              <Avatar
-                src={avatarPreview}
-                name={user.name}
-                size={110}
-                onClick={() => fileInputRef.current?.click()}
-                className="profile-avatar-img"
-              />
-              <div className="profile-avatar-camera-badge">
-                <Camera size={14} color="white" />
-              </div>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                style={{ display: 'none' }} 
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-            </div>
-
-            <div className="profile-details-col">
-              <div className="profile-name-input-wrapper">
+      <div className="page-content">
+        <div className="page-main">
+          
+          <div className="profile-container">
+            {/* HERO SECTION */}
+            <div className="profile-hero">
+              <div className="profile-avatar-wrapper">
+                <Avatar 
+                  src={avatarPreview} 
+                  name={user.name} 
+                  size={100} 
+                  style={{ borderRadius: '50%' }}
+                />
+                <button className="profile-camera-btn" onClick={() => fileInputRef.current?.click()}>
+                  <Camera size={18} />
+                </button>
                 <input 
-                  type="text" 
-                  defaultValue={user.name}
-                  onBlur={(e) => {
-                    if (e.target.value !== user.name) {
-                      fetcher.submit({ action: "updateName", name: e.target.value }, { method: "post" });
-                    }
-                  }}
-                  className="profile-name-input"
+                  type="file" 
+                  ref={fileInputRef} 
+                  style={{ display: 'none' }} 
+                  accept="image/*"
+                  onChange={handleFileChange}
                 />
               </div>
-              <p className="profile-username-text">@{ user.username }</p>
-              <div className="profile-badges-row">
-                <div className={user.role === 'admin' ? 'profile-badge-role-admin' : 'profile-badge-role-user'}>
-                  {user.role === 'admin' ? 'Admin' : 'Usuário'}
+              
+              <input 
+                type="text" 
+                defaultValue={user.name}
+                onBlur={(e) => {
+                  if (e.target.value !== user.name) {
+                    fetcher.submit({ action: "updateName", name: e.target.value }, { method: "post" });
+                  }
+                }}
+                className="profile-name-input"
+              />
+              <span className="profile-username">@{user.username}</span>
+              
+              <div className={`profile-badge ${user.role === 'admin' ? 'admin' : ''}`}>
+                {user.role === 'admin' ? 'Administrador' : 'Colaborador'}
+              </div>
+            </div>
+
+            {/* CONTENT GRID */}
+            <div className="profile-content-grid">
+              
+              {/* EQUIPES */}
+              <div className="profile-card">
+                <h3 className="profile-card-title">
+                  <ShieldCheck size={20} /> Equipes e Acessos
+                </h3>
+                <div className="team-list">
+                  {team && (
+                    <div className="team-item primary">
+                      <div className="team-icon">
+                        <ShieldCheck size={24} />
+                      </div>
+                      <div className="team-info">
+                        <span className="team-name">{team.name}</span>
+                        <span className="team-role">Principal</span>
+                      </div>
+                    </div>
+                  )}
+                  {(user.userTeams || []).map((ut: any) => (
+                    <div key={ut.teamId} className="team-item">
+                      <div className="team-icon">
+                        <Layers size={24} />
+                      </div>
+                      <div className="team-info">
+                        <span className="team-name">{ut.teamName}</span>
+                        <span className="team-role">{ut.role === 'manager' ? 'Gerente' : 'Membro'}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                
-                {team && (
-                  <div className="profile-badge-team-primary">
-                    <ShieldCheck size={14} /> {team.name} (Principal)
-                  </div>
-                )}
-                {(user.userTeams || []).map((ut: any) => (
-                  <div key={ut.teamId} className={ut.role === 'manager' ? 'profile-badge-team-manager' : 'profile-badge-team-employee'}>
-                    <Layers size={14} /> {ut.teamName} {ut.role === 'manager' ? '· Ger.' : ''}
-                  </div>
-                ))}
               </div>
+
+              {/* ADMIN */}
+              {user.role === 'admin' && (
+                <div className="profile-card admin-card">
+                  <h3 className="profile-card-title">
+                    <Briefcase size={20} /> Administração
+                  </h3>
+                  <p className="admin-desc">
+                    Acesso restrito ao painel de gestão do sistema. Gerencie usuários, configurações e logs do Chronos.
+                  </p>
+                  <a href="/gestao" className="admin-btn">
+                    Painel Gestão <ChevronRight size={18} />
+                  </a>
+                </div>
+              )}
+
             </div>
+
+            {/* DANGER ZONE */}
+            <div className="profile-danger-zone">
+              <Form action="/logout" method="post">
+                <button className="btn-logout">
+                  <LogOut size={16} /> Encerrar Sessão
+                </button>
+              </Form>
+            </div>
+
           </div>
 
-          {user.role === 'admin' && (
-            <div className="profile-admin-banner">
-              <div>
-                <h3 className="profile-admin-banner-title">Administração</h3>
-                <p className="profile-admin-banner-desc">Gerenciar equipes, cargos e acessos.</p>
-              </div>
-              <a href="/gestao" className="profile-admin-banner-link">
-                Painel de Gestão <ChevronRight size={16} />
-              </a>
-            </div>
-          )}
-
-          <div className="profile-logout-wrapper">
-            <Form action="/logout" method="post">
-              <button className="btn-register btn-profile-logout">
-                <LogOut size={20} /> Sair da Conta
-              </button>
-            </Form>
-          </div>
         </div>
       </div>
     </div>

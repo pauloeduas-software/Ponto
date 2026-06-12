@@ -10,10 +10,10 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: 12px;
-  color: #a5b4fc;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text);
   font-size: 0.85rem;
   font-weight: 700;
   margin-bottom: 12px;
@@ -48,7 +48,7 @@
   padding: 8px 16px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--glass-border);
-  border-radius: 14px;
+  border-radius: 8px;
 }
 .sim-day-row-final.active {
   background: rgba(255, 255, 255, 0.05);
@@ -68,7 +68,7 @@
   width: 100%;
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--glass-border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 8px;
   color: white;
   text-align: center;
@@ -82,17 +82,17 @@
 }
 
 .pos {
-  color: var(--success) !important;
+  color: var(--primary) !important;
 }
 .neg {
-  color: var(--error) !important;
+  color: var(--text) !important;
 }
 
 .footer-panel-compact {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--glass-border);
   padding: 10px 20px;
-  border-radius: 14px;
+  border-radius: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -212,6 +212,6 @@
 }
 
 .day-field.goal input {
-  color: var(--primary) !important;
+  color: var(--text) !important;
 }
 

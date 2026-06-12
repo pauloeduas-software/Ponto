@@ -24,7 +24,7 @@ export async function getDashboardHistory(userId: string, monthStr: string): Pro
     goal: minutesToHHMM(r.goalMins || 480),
     isOvertime: r.isOvertime,
     worked: minutesToHHMM(r.workMins),
-    diff: minutesToHHMM(Math.abs(r.diffMins)),
+    diff: r.diffMins === 0 ? '00:00' : `${r.diffMins > 0 ? '+' : '-'}${minutesToHHMM(Math.abs(r.diffMins))}`,
     observation: r.observation || undefined,
     }));
   });

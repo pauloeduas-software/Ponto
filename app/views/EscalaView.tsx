@@ -52,8 +52,8 @@ export function EscalaView({
 
   const filteredEmployees = useMemo(() => {
     if (selectedTeamId === "todos") return employees;
-    return employees.filter(emp => 
-      emp.teamId === selectedTeamId || 
+    return employees.filter(emp =>
+      emp.teamId === selectedTeamId ||
       (emp.userTeams && emp.userTeams.some((ut: any) => ut.teamId === selectedTeamId))
     );
   }, [employees, selectedTeamId]);
@@ -62,22 +62,20 @@ export function EscalaView({
     setSelectedDateStr(dateStr);
     if (selectedUserId === "todos") {
       setIsModalOpen(true);
-    } else if (isAdmin || canEditActiveTeam) {
-      toggleDay(dateStr);
     }
   };
 
-  const toggleDay = (dateStr: string) => {
-    if (selectedUserId === "todos" || (!isAdmin && !canEditActiveTeam)) return;
+  const toggleEmployeeForDay = (empId: string) => {
+    if (!isAdmin && !canEditActiveTeam) return;
 
     let newEscala;
-    const exists = escala.find(s => s.userId === selectedUserId && s.date === dateStr);
+    const exists = escala.find(s => s.userId === empId && s.date === selectedDateStr);
     if (exists) {
-      newEscala = escala.filter(s => !(s.userId === selectedUserId && s.date === dateStr));
+      newEscala = escala.filter(s => !(s.userId === empId && s.date === selectedDateStr));
     } else {
       const newShift: Shift = {
-        userId: selectedUserId,
-        date: dateStr,
+        userId: empId,
+        date: selectedDateStr,
         startTime: "08:00",
         endTime: "17:00",
         type: 'trabalho'
@@ -86,11 +84,11 @@ export function EscalaView({
     }
     setEscala(newEscala);
 
-    const userShifts = newEscala.filter(s => s.userId === selectedUserId);
+    const userShifts = newEscala.filter(s => s.userId === empId);
     fetcher.submit(
       {
         action: "save",
-        userId: selectedUserId,
+        userId: empId,
         shifts: JSON.stringify(userShifts)
       },
       { method: "post" }
@@ -102,147 +100,169 @@ export function EscalaView({
   }, [escala, selectedDateStr, filteredEmployees]);
 
   return (
-    <div className="container">
-      <div className="card">
-        <div className="admin-header-new">
-          <div className="header-row-1">
-            <h1>Escala Mensal</h1>
-            <MonthSelector currentDate={currentDate} onChangeMonth={changeMonth} />
-          </div>
+    <div className="page-shell">
+      <div className="page-topbar">
+        <div className="page-topbar-left">
+          <h1 className="page-title">Escala Mensal</h1>
         </div>
 
-        {!isAdmin && !canEditActiveTeam && activeTeamId && (
-          <div className="escala-info-badge">
-            <XCircle size={14} /> Modo Visualização — você é funcionário desta equipe
-          </div>
-        )}
+        <div className="page-topbar-right">
+          <MonthSelector currentDate={currentDate} onChangeMonth={changeMonth} />
+        </div>
+      </div>
 
-        <div className="escala-filters-container">
-          <div className={`filters-grid-new ${!(isAdmin || managerTeams.length > 0) ? 'single-col' : ''}`}>
-            {(isAdmin || managerTeams.length > 0) && (
-              <div className="input-group input-group-no-margin">
-                <div className="label-container">
-                  <label className="label-icon-flex">
-                    <Layers size={12} /> Filtrar Equipe
-                  </label>
-                </div>
-                {isAdmin ? (
-                  <select
-                    value={selectedTeamId}
-                    onChange={(e) => {
-                      setSelectedTeamId(e.target.value);
-                      setSelectedUserId("todos");
-                    }}
-                    className="custom-select"
-                  >
-                    <option value="todos">Todas as Equipes</option>
-                    {teams.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <select
-                    value={activeTeamId || managerTeams[0]?.teamId}
-                    onChange={(e) => {
-                      navigate(`/escala?teamFilter=${e.target.value}`);
-                    }}
-                    className="custom-select"
-                  >
-                    {managerTeams.map((mt: any) => (
-                      <option key={mt.teamId} value={mt.teamId}>{mt.teamName}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            )}
-            
-            <div className="input-group input-group-no-margin">
-              <div className="label-container">
-                <label className="label-icon-flex">
-                  <Users size={12} /> Filtrar Colaborador
-                </label>
-              </div>
-              <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className="custom-select"
-              >
-                <option value="todos">Todos</option>
-                {filteredEmployees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.name}</option>
-                ))}
-              </select>
+      <div className="page-subbar">
+        <div className="page-subbar-left">
+          {!isAdmin && !canEditActiveTeam && activeTeamId && (
+            <div className="view-mode-badge" style={{ marginRight: 16 }}>
+              <XCircle size={12} /> Modo Visualização
             </div>
+          )}
+          {(isAdmin || managerTeams.length > 0) && (
+            <div className="subbar-filter">
+              <span className="subbar-filter-label">Equipe</span>
+              {isAdmin ? (
+                <select
+                  value={selectedTeamId}
+                  onChange={(e) => { setSelectedTeamId(e.target.value); setSelectedUserId("todos"); }}
+                >
+                  <option value="todos">Todas</option>
+                  {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              ) : (
+                <select
+                  value={activeTeamId || managerTeams[0]?.teamId}
+                  onChange={(e) => navigate(`/escala?teamFilter=${e.target.value}`)}
+                >
+                  {managerTeams.map((mt: any) => (
+                    <option key={mt.teamId} value={mt.teamId}>{mt.teamName}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+          <div className="subbar-filter">
+            <span className="subbar-filter-label">Colaborador</span>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+            >
+              <option value="todos">Todos</option>
+              {filteredEmployees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
+              ))}
+            </select>
           </div>
         </div>
+        <div className="page-subbar-right">
+          {/* Vazio na escala para manter a altura consistente */}
+        </div>
+      </div>
 
-        <CalendarGrid
-          currentDate={currentDate}
-          selectedDateStr={selectedDateStr}
-          isModalOpen={isModalOpen}
-          onDayClick={handleDayClick}
-          renderDay={(d, isSelected) => {
-            if (selectedUserId === "todos") {
-              const scheduledUsers = filteredEmployees.filter(emp => escala.find(s => s.userId === emp.id && s.date === d.dateStr));
-              const count = scheduledUsers.length;
+      <div className="page-content">
+        <div className="page-main">
+
+          <CalendarGrid
+            currentDate={currentDate}
+            selectedDateStr={selectedDateStr}
+            isModalOpen={isModalOpen}
+            onDayClick={handleDayClick}
+            renderDay={(d, isSelected) => {
+              const scheduledUsers = filteredEmployees.filter(emp =>
+                escala.find(s => s.userId === emp.id && s.date === d.dateStr) &&
+                (selectedUserId === "todos" || emp.id === selectedUserId)
+              );
+              const isCursorEditable = selectedUserId === "todos";
               return (
-                <div
-                  className={`calendar-day ${isSelected ? 'selected' : ''}`}
-                >
-                  {d.day}
-                  {count > 0 && (
-                    <AvatarGroup
-                      users={scheduledUsers}
-                      max={3}
-                      size={22}
-                    />
+                <div className={`calendar-day ${isSelected ? 'selected' : ''} ${!isCursorEditable ? 'default-cursor' : ''}`}>
+                  <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{d.day}</span>
+                  </div>
+                  {scheduledUsers.length > 0 ? (
+                    selectedUserId === "todos" ? (
+                      <AvatarGroup users={scheduledUsers} max={3} size={32} />
+                    ) : (
+                      <span className="calendar-day-bottom-text">08:00 - 17:00</span>
+                    )
+                  ) : (
+                    <span className="calendar-day-bottom-text"></span>
                   )}
                 </div>
               );
-            }
-
-            const isScheduled = escala.find(s => s.userId === selectedUserId && s.date === d.dateStr);
-            return (
-              <div
-                className={`calendar-day ${isScheduled ? 'selected scheduled' : ''} ${(isAdmin || canEditActiveTeam) ? 'editable-cursor' : 'default-cursor'}`}
-              >
-                {d.day}
-                {isScheduled ? (
-                  <CheckCircle2 size={12} className="escala-day-icon success" />
-                ) : (
-                  <XCircle size={10} className="escala-day-icon muted" />
-                )}
-              </div>
-            );
-          }}
-        />
+            }}
+          />
+        </div>
       </div>
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+
         title={new Date(selectedDateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
         icon={<CalendarIcon size={20} color="var(--primary)" />}
         className="large"
       >
         <div className="history-list">
-          <p className="escala-modal-subtitle">Colaboradores escalados para este dia:</p>
-          {scheduledEmployeesOnSelectedDay.length > 0 ? (
-            scheduledEmployeesOnSelectedDay.map(emp => (
-              <div key={emp.id} className="escala-modal-employee-card">
-                <Avatar 
-                  src={emp.avatarUrl} 
-                  name={emp.name} 
-                  size={44} 
-                  className="escala-modal-avatar"
-                />
-                <div className="escala-modal-employee-name">{emp.name}</div>
+          <p className="escala-modal-subtitle">
+            {(isAdmin || canEditActiveTeam)
+              ? "Clique em um colaborador para escalar/remover deste dia:"
+              : "Colaboradores escalados para este dia:"}
+          </p>
+          {(isAdmin || canEditActiveTeam) ? (
+            filteredEmployees.length > 0 ? (
+              filteredEmployees.map(emp => {
+                const isScheduled = escala.some(s => s.userId === emp.id && s.date === selectedDateStr);
+                return (
+                  <div
+                    key={emp.id}
+                    className={`escala-modal-employee-card ${isScheduled ? 'scheduled-card' : ''}`}
+                    onClick={() => toggleEmployeeForDay(emp.id)}
+                    style={{ cursor: 'pointer', justifyContent: 'space-between' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Avatar
+                        src={emp.avatarUrl}
+                        name={emp.name}
+                        size={44}
+                        className="escala-modal-avatar"
+                      />
+                      <div className="escala-modal-employee-name">{emp.name}</div>
+                    </div>
+                    <div>
+                      {isScheduled ? (
+                        <CheckCircle2 size={20} color="var(--primary)" />
+                      ) : (
+                        <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid var(--glass-border)' }} />
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="escala-modal-empty-box">
+                <p>Nenhum colaborador na equipe.</p>
               </div>
-            ))
+            )
           ) : (
-            <div className="escala-modal-empty-box">
-              <p>Ninguém escalado.</p>
-            </div>
+            scheduledEmployeesOnSelectedDay.length > 0 ? (
+              scheduledEmployeesOnSelectedDay.map(emp => (
+                <div key={emp.id} className="escala-modal-employee-card">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Avatar
+                      src={emp.avatarUrl}
+                      name={emp.name}
+                      size={44}
+                      className="escala-modal-avatar"
+                    />
+                    <div className="escala-modal-employee-name">{emp.name}</div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="escala-modal-empty-box">
+                <p>Ninguém escalado.</p>
+              </div>
+            )
           )}
         </div>
       </Modal>

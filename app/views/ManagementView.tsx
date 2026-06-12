@@ -45,158 +45,209 @@ export function ManagementView({ teams, users }: ManagementViewProps) {
   }, [fetcher.state, fetcher.data]);
 
   return (
-    <div className="container">
-      <div className="card">
-        <div className="header management-header">
-          <div>
-            <h1>Gestão de Equipes</h1>
-            <p className="subtitle">Membros e Acessos da Organização</p>
-          </div>
-          <button className="btn-register btn-teams-action" onClick={() => setIsTeamModalOpen(true)}>
-            <Plus size={18} /> Equipes
+    <div className="page-shell">
+      <div className="page-topbar">
+        <div className="page-topbar-left">
+          <h1 className="page-title">Gestão de Usuários</h1>
+        </div>
+        <div className="page-topbar-right">
+          <button className="action-btn" onClick={() => setIsTeamModalOpen(true)}>
+            <Plus size={16} /> Gerenciar Equipes
           </button>
         </div>
+      </div>
 
-        <div className="history-list">
+      <div className="page-content">
+        <div className="page-main">
+          <div className="users-grid">
           {users.map(u => (
-            <div key={u.id} className="user-card-item">
-              <div className="user-card-profile-col">
-                <Avatar src={u.avatarUrl} name={u.name} size={48} />
-                <div>
-                  <div className="user-card-name-row">{u.name} <span className="user-card-username">@{u.username}</span></div>
-                  <div className="user-card-badge-row">
-                    <span className={u.role === 'admin' ? 'badge-role-admin' : 'badge-role-user'}>
-                      {u.role === 'admin' ? 'Admin' : 'Usuário'}
-                    </span>
-                    {u.teamName && (
-                      <span className="badge-team-primary">
-                        {u.teamName}
-                      </span>
-                    )}
-                    {(u.userTeams || []).map((ut: any) => (
-                      <span key={ut.teamId} className={ut.role === 'manager' ? 'badge-team-manager' : 'badge-team-employee'}>
-                        {ut.teamName}{ut.role === 'manager' ? ' · Ger.' : ''}
-                      </span>
-                    ))}
-                    {!u.teamId && (!u.userTeams || u.userTeams.length === 0) && (
-                      <span className="badge-team-empty">Sem equipe</span>
-                    )}
-                  </div>
-                </div>
+            <div key={u.id} className="user-grid-card clickable-card" onClick={() => setEditingUserId(u.id)}>
+              <div className="user-grid-header">
+                <Avatar src={u.avatarUrl} name={u.name} size={48} style={{ borderRadius: '50%' }} />
               </div>
-              <button className="icon-btn btn-user-edit" onClick={() => setEditingUserId(u.id)}><Edit3 size={18} /></button>
+              <div className="user-grid-info">
+                <h3 className="user-grid-name">{u.name}</h3>
+                <span className="user-grid-username">@{u.username}</span>
+              </div>
+              <div className="user-grid-badges">
+                <span className={u.role === 'admin' ? 'badge-role-admin' : 'badge-role-user'}>
+                  {u.role === 'admin' ? 'Admin' : 'Usuário'}
+                </span>
+                {u.teamName && (
+                  <span className="badge-team-primary">
+                    {u.teamName}
+                  </span>
+                )}
+                {(u.userTeams || []).map((ut: any) => (
+                  <span key={ut.teamId} className={ut.role === 'manager' ? 'badge-team-manager' : 'badge-team-employee'}>
+                    {ut.teamName}{ut.role === 'manager' ? ' · Ger.' : ''}
+                  </span>
+                ))}
+                {!u.teamId && (!u.userTeams || u.userTeams.length === 0) && (
+                  <span className="badge-team-empty">Sem equipe</span>
+                )}
+              </div>
             </div>
           ))}
         </div>
       </div>
+    </div>
 
-      <Modal isOpen={isTeamModalOpen} onClose={() => setIsTeamModalOpen(false)} title="Gerenciar Equipes" icon={<Layers size={20} />}>
-        <div className="modal-grid-gap-32">
-          <fetcher.Form method="post" ref={teamFormRef}>
-            <input type="hidden" name="_action" value="createTeam" />
-            <div className="input-group"><label className="modal-section-label-uppercase">Criar Nova Equipe</label>
-              <div className="modal-row-gap-8">
-                <input type="text" name="name" required placeholder="Nome da equipe" className="input-team-name" />
-                <button type="submit" className="btn-register modal-input-large-btn">Criar</button>
-              </div>
+      <Modal isOpen={isTeamModalOpen} onClose={() => setIsTeamModalOpen(false)} title="Gerenciar Equipes" icon={<Layers size={28} />}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          <div className="settings-section">
+            <div className="settings-section-header">
+              <h3 className="settings-section-title">Criar Nova Equipe</h3>
+              <p className="settings-section-desc">Adicione novos departamentos ou times ao sistema.</p>
             </div>
-          </fetcher.Form>
-          <div className="modal-divider-top">
-            <h3 className="modal-section-label-uppercase">Equipes Atuais</h3>
-            <div className="modal-grid-gap-8">
+            <fetcher.Form method="post" ref={teamFormRef}>
+              <input type="hidden" name="_action" value="createTeam" />
+              <div className="settings-card">
+                <div className="settings-card-row">
+                  <input type="text" name="name" required placeholder="Nome da equipe (ex: Financeiro)" className="settings-input" />
+                  <button type="submit" className="settings-btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                    {fetcher.state === "submitting" && fetcher.formData?.get("_action") === "createTeam" ? "Criando..." : "Criar Equipe"}
+                  </button>
+                </div>
+              </div>
+            </fetcher.Form>
+          </div>
+
+          <div className="settings-section">
+            <div className="settings-section-header">
+              <h3 className="settings-section-title">Equipes Atuais</h3>
+              <p className="settings-section-desc">Gerencie as equipes existentes. A exclusão removerá os usuários destas equipes.</p>
+            </div>
+            <div className="settings-card">
               {teams.map(t => (
-                <div key={t.id} className="team-list-card-item">
-                  <span className="team-list-name">{t.name}</span>
-                  <fetcher.Form method="post" onSubmit={(e) => !confirm(`Excluir equipe "${t.name}"?`) && e.preventDefault()}>
+                <div key={t.id} className="settings-card-row">
+                  <span className="team-list-name" style={{ fontWeight: 500 }}>{t.name}</span>
+                  <fetcher.Form method="post" onSubmit={(e) => !confirm(`Tem certeza que deseja excluir a equipe "${t.name}" permanentemente?`) && e.preventDefault()} className="form-no-margin">
                     <input type="hidden" name="_action" value="deleteTeam" /><input type="hidden" name="teamId" value={t.id} />
-                    <button type="submit" className="icon-btn btn-icon-red-transparent"><Trash2 size={16} /></button>
+                    <button type="submit" className="btn-icon-subtle" title="Excluir equipe"><Trash2 size={16} /></button>
                   </fetcher.Form>
                 </div>
               ))}
+              {teams.length === 0 && (
+                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-dim)' }}>
+                  Nenhuma equipe cadastrada.
+                </div>
+              )}
             </div>
           </div>
+
         </div>
       </Modal>
 
-      <Modal isOpen={!!editingUserId} onClose={() => setEditingUserId(null)} title="Editar Acesso" icon={<ShieldCheck size={20} />}>
+      <Modal isOpen={!!editingUserId} onClose={() => setEditingUserId(null)} title="Editar Acesso" icon={<ShieldCheck size={28} />}>
         {currentUser && (
-          <div className="modal-grid-gap-24">
-            <div>
-              <label className="modal-label-small-uppercase">Equipes e Cargos</label>
-              <div className="modal-grid-gap-8 modal-team-list-container">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* Equipes e Cargos Section */}
+            <div className="settings-section">
+              <div className="settings-section-header">
+                <h3 className="settings-section-title">Equipes e Cargos</h3>
+                <p className="settings-section-desc">Gerencie o nível de acesso e as equipes do usuário.</p>
+              </div>
+              <div className="settings-card">
                 {currentUser.teamId && currentUser.teamName && (
-                  <div className="user-team-primary-container">
-                    <div className="user-team-primary-left">
-                      <ShieldCheck size={14} className="icon-shield-purple" />
-                      <span className="user-team-primary-text">{currentUser.teamName} (Principal)</span>
+                  <div className="settings-card-row" style={{ padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                      <fetcher.Form method="post" className="form-no-margin" style={{ flex: 1 }}>
+                        <input type="hidden" name="_action" value="updatePrimaryTeam" /><input type="hidden" name="userId" value={currentUser.id} />
+                        <select name="teamId" defaultValue={currentUser.teamId} onChange={(e) => fetcher.submit(e.currentTarget.form)} className="settings-select" style={{ maxWidth: '200px' }}>
+                          {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                      </fetcher.Form>
+                      <span className="user-team-primary-badge">Principal</span>
                     </div>
                     <fetcher.Form method="post" className="form-no-margin">
                       <input type="hidden" name="_action" value="removePrimaryTeam" /><input type="hidden" name="userId" value={currentUser.id} />
-                      <button type="submit" className="icon-btn btn-icon-red-transparent"><Trash2 size={14} /></button>
+                      <button type="submit" className="btn-icon-subtle" title="Remover equipe principal"><Trash2 size={16} /></button>
                     </fetcher.Form>
                   </div>
                 )}
+                
                 {(currentUser.userTeams || []).map((ut: any) => (
-                  <div key={ut.teamId} className="user-team-link-row">
-                    <span className="user-team-name-text">{ut.teamName}</span>
-                    <div className="user-team-link-actions">
+                  <div key={ut.teamId} className="settings-card-row">
+                    <span className="team-list-name">{ut.teamName}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <fetcher.Form method="post" className="form-no-margin">
                         <input type="hidden" name="_action" value="updateUserTeamRole" /><input type="hidden" name="userId" value={currentUser.id} /><input type="hidden" name="teamId" value={ut.teamId} />
-                        <select name="role" defaultValue={ut.role} onChange={(e) => fetcher.submit(e.currentTarget.form)} className="user-team-link-select">
+                        <select name="role" defaultValue={ut.role} onChange={(e) => fetcher.submit(e.currentTarget.form)} className="settings-select">
                           <option value="employee">Funcionário</option><option value="manager">Gerente</option>
                         </select>
                       </fetcher.Form>
                       <fetcher.Form method="post" className="form-no-margin">
                         <input type="hidden" name="_action" value="removeUserTeam" /><input type="hidden" name="userId" value={currentUser.id} /><input type="hidden" name="teamId" value={ut.teamId} />
-                        <button type="submit" className="icon-btn btn-icon-red-transparent"><Trash2 size={14} /></button>
+                        <button type="submit" className="btn-icon-subtle" title="Remover equipe"><Trash2 size={16} /></button>
                       </fetcher.Form>
                     </div>
                   </div>
                 ))}
+                
                 {!currentUser.teamId && (currentUser.userTeams || []).length === 0 && (
-                  <p className="modal-empty-text">Nenhuma equipe vinculada ainda.</p>
+                  <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-dim)' }}>
+                    Nenhuma equipe vinculada.
+                  </div>
                 )}
+
+                <div className="settings-card-footer">
+                  <fetcher.Form method="post" style={{ width: '100%', display: 'flex', gap: '8px' }}>
+                    <input type="hidden" name="_action" value="addUserTeam" /><input type="hidden" name="userId" value={currentUser.id} />
+                    <select name="teamId" className="settings-select" style={{ flex: 1 }}>
+                      <option value="">+ Adicionar equipe...</option>
+                      {teams.filter(t => t.id !== currentUser.teamId && !(currentUser.userTeams || []).some((ut: any) => ut.teamId === t.id)).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    <select name="role" className="settings-select" style={{ width: '130px' }}><option value="employee">Funcionário</option><option value="manager">Gerente</option></select>
+                    <button type="submit" className="settings-btn-primary" style={{ padding: '6px 12px' }}>Add</button>
+                  </fetcher.Form>
+                </div>
               </div>
-              <fetcher.Form method="post">
-                <input type="hidden" name="_action" value="addUserTeam" /><input type="hidden" name="userId" value={currentUser.id} />
-                <div className="modal-row-gap-8">
-                  <select name="teamId" className="select-team-add" onChange={(e) => e.target.value && fetcher.submit(e.currentTarget.form)}>
-                    <option value="">+ Adicionar equipe...</option>
-                    {teams.filter(t => t.id !== currentUser.teamId && !(currentUser.userTeams || []).some((ut: any) => ut.teamId === t.id)).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <select name="role" className="select-role-add"><option value="employee">Funcionário</option><option value="manager">Gerente</option></select>
-                </div>
-              </fetcher.Form>
             </div>
-            <div className="modal-divider-top">
+
+            {/* Segurança Section */}
+            <div className="settings-section">
+              <div className="settings-section-header">
+                <h3 className="settings-section-title">Segurança</h3>
+                <p className="settings-section-desc">Defina uma nova senha para este acesso.</p>
+              </div>
               <fetcher.Form method="post" ref={passwordFormRef}>
-                <input type="hidden" name="_action" value="changePassword" /><input type="hidden" name="userId" value={currentUser.id} /><label htmlFor="newPassword" className="modal-label-small-uppercase">Alterar Senha</label>
-                <div className="modal-row-gap-8">
-                  <input type="password" id="newPassword" name="newPassword" placeholder="Nova senha (mín. 4 caracteres)" className="input-password-change" autoComplete="new-password" required />
-                  <button type="submit" className="btn-register btn-save-password">
-                    {fetcher.state === "submitting" && fetcher.formData?.get("_action") === "changePassword" ? "Salvando..." : "Salvar"}
-                  </button>
+                <input type="hidden" name="_action" value="changePassword" /><input type="hidden" name="userId" value={currentUser.id} />
+                <div className="settings-card">
+                  <div className="settings-card-row">
+                    <input type="password" id="newPassword" name="newPassword" placeholder="Nova senha (mín. 4 caracteres)" autoComplete="new-password" required className="settings-input" />
+                    <button type="submit" className="settings-btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                      {fetcher.state === "submitting" && fetcher.formData?.get("_action") === "changePassword" ? "Salvando..." : "Alterar Senha"}
+                    </button>
+                  </div>
+                  {(passwordFeedback?.error || passwordFeedback?.success) && (
+                    <div className="settings-card-row" style={{ paddingTop: '8px', paddingBottom: '8px', background: 'rgba(0,0,0,0.2)' }}>
+                      {passwordFeedback?.error && <p className="password-feedback-error" style={{ margin: 0 }}>{passwordFeedback.error}</p>}
+                      {passwordFeedback?.success && passwordFeedback?.message && <p className="password-feedback-success" style={{ margin: 0 }}>{passwordFeedback.message}</p>}
+                    </div>
+                  )}
                 </div>
-                {passwordFeedback?.error && (
-                  <p className="password-feedback-error">
-                    {passwordFeedback.error}
-                  </p>
-                )}
-                {passwordFeedback?.success && passwordFeedback?.message && (
-                  <p className="password-feedback-success">
-                    {passwordFeedback.message}
-                  </p>
-                )}
               </fetcher.Form>
             </div>
-            <div className="modal-divider-top">
-              <fetcher.Form method="post" onSubmit={(e) => !confirm("Excluir usuário permanentemente?") && e.preventDefault()}>
-                <input type="hidden" name="_action" value="deleteUser" /><input type="hidden" name="userId" value={currentUser.id} />
-                <button type="submit" className="btn-delete-user-glass">
-                  <Trash2 size={16} /> Excluir Usuário
-                </button>
-              </fetcher.Form>
+
+            {/* Danger Zone */}
+            <div className="settings-section danger-zone">
+              <div className="danger-zone-content">
+                <div className="settings-section-header">
+                  <h3 className="settings-section-title" style={{ color: '#ef4444' }}>Excluir Conta</h3>
+                  <p className="settings-section-desc">Esta ação é irreversível e removerá todos os dados e o acesso deste usuário.</p>
+                </div>
+                <fetcher.Form method="post" onSubmit={(e) => !confirm("Excluir usuário permanentemente?") && e.preventDefault()}>
+                  <input type="hidden" name="_action" value="deleteUser" /><input type="hidden" name="userId" value={currentUser.id} />
+                  <button type="submit" className="danger-btn">
+                    Excluir Usuário
+                  </button>
+                </fetcher.Form>
+              </div>
             </div>
+
           </div>
         )}
       </Modal>

@@ -21,6 +21,11 @@ export const getDaysInMonth = (currentDate: Date): (CalendarDay | null)[] => {
     const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
     days.push({ day: i, dateStr });
   }
+
+  // Preenche o final da grade para completar 6 semanas (42 dias)
+  while (days.length < 42) {
+    days.push(null);
+  }
   
   return days;
 };

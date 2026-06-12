@@ -153,7 +153,7 @@ function buildHistoryData(records: any[]): Record<string, SavedDay[]> {
       goalMins: r.goalMins || 480,
       goal: minutesToHHMM(r.goalMins || 480),
       worked: minutesToHHMM(r.workMins),
-      diff: minutesToHHMM(Math.abs(r.diffMins)),
+      diff: r.diffMins === 0 ? '00:00' : `${r.diffMins > 0 ? '+' : '-'}${minutesToHHMM(Math.abs(r.diffMins))}`,
       observation: r.observation || undefined,
     });
   });

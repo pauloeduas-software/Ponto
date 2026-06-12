@@ -60,7 +60,7 @@ export function calculatePunchMetrics(punches: string[], dailyGoal: string): Pun
     workMins,
     diffMins,
     totalWorkedStr: minutesToHHMM(workMins),
-    diffStr: minutesToHHMM(Math.abs(diffMins)),
+    diffStr: diffMins === 0 ? '00:00' : `${diffMins > 0 ? '+' : '-'}${minutesToHHMM(Math.abs(diffMins))}`,
     isOvertime: diffMins >= 0,
     firstEntryMins,
     breakMins,

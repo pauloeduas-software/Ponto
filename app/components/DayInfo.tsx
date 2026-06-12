@@ -20,69 +20,92 @@ export function DayInfo({
   observation
 }: DayInfoProps) {
   const safePunches = punches || [];
-  const punchPairsCount = Math.ceil(safePunches.length / 2);
+
+  // Group punches into pairs: [[entrada, saida], [entrada, saida]]
+  const punchPairs: [string, string][] = [];
+  for (let i = 0; i < safePunches.length; i += 2) {
+    punchPairs.push([safePunches[i], safePunches[i + 1] || "--:--"]);
+  }
 
   return (
-    <div className="day-details-container">
-      {/* Bloco de Batidas do Dia */}
-      <div className="info-box" style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
-        <div className="day-details-punches">
-          {safePunches.length > 0 ? (
-            Array.from({ length: punchPairsCount }).map((_, i) => (
-              <div key={i} className="day-details-row">
-                <div className="day-details-col">
-                  <span className="day-details-meta">Entrada</span>
-                  <span className="day-details-value">{safePunches[i * 2]}</span>
+    <div className="day-modal-info-container">
+      {/* Linha do Tempo de Batidas (Timeline de Turnos) */}
+      <div className="day-modal-section">
+        <div className="day-modal-section-title">Registro de Batidas</div>
+        {punchPairs.length > 0 ? (
+          <div className="day-modal-timeline">
+            {punchPairs.map((pair, index) => {
+              const [entrada, saida] = pair;
+              return (
+                <div key={index} className="day-modal-timeline-item">
+                  <div className="day-modal-timeline-indicator">
+                    <div className="day-modal-timeline-dot entrada" />
+                    {index < punchPairs.length - 1 && (
+                      <div className="day-modal-timeline-line" />
+                    )}
+                  </div>
+                  <div className="day-modal-timeline-content">
+                    <div className="day-modal-timeline-pair">
+                      <div className="day-modal-timeline-punch">
+                        <span className="day-modal-timeline-time">{entrada}</span>
+                        <span className="day-modal-timeline-type">Entrada</span>
+                      </div>
+                      <span className="day-modal-timeline-arrow">→</span>
+                      <div className="day-modal-timeline-punch">
+                        <span className="day-modal-timeline-time">{saida}</span>
+                        <span className="day-modal-timeline-type">Saída</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="day-details-arrow">→</div>
-                <div className="day-details-col align-right">
-                  <span className="day-details-meta">Saída</span>
-                  <span className="day-details-value">{safePunches[i * 2 + 1] || "--:--"}</span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="day-details-empty">
-              Sem batidas registradas.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Grid Estatístico de Totais */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: showGoal && goal ? '1fr 1fr 1fr' : '1fr 1fr',
-          gap: '12px'
-        }}
-      >
-        {showGoal && goal && (
-          <div className="info-box">
-            <span className="info-label"><Clock size={12} /> Meta</span>
-            <span className="info-value">{goal}</span>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="day-modal-empty-state">
+            Nenhuma batida registrada para esta data.
           </div>
         )}
-        <div className="info-box">
-          <span className="info-label"><Timer size={12} /> Trabalhado</span>
-          <span className="info-value">{worked}</span>
-        </div>
-        <div className="info-box">
-          <span className="info-label">
-            {isOvertime ? <TrendingUp size={12} /> : <TrendingDown size={12} />} Saldo
+      </div>
+
+      {/* Horas e Saldos Typográficos */}
+      <div className="day-modal-header-stats">
+        <div className="day-modal-stat">
+          <span className="day-modal-stat-label">
+            <Timer size={12} className="day-modal-stat-icon" /> Trabalhado
           </span>
-          <span className={`info-value ${isOvertime ? "overtime" : "missing"}`}>
+          <span className="day-modal-stat-value">{worked}</span>
+        </div>
+        
+        {showGoal && goal && (
+          <div className="day-modal-stat">
+            <span className="day-modal-stat-label">
+              <Clock size={12} className="day-modal-stat-icon" /> Meta
+            </span>
+            <span className="day-modal-stat-value">{goal}</span>
+          </div>
+        )}
+
+        <div className="day-modal-stat">
+          <span className="day-modal-stat-label">
+            {isOvertime ? (
+              <TrendingUp size={12} className="day-modal-stat-icon" />
+            ) : (
+              <TrendingDown size={12} className="day-modal-stat-icon" />
+            )}{" "}
+            Saldo
+          </span>
+          <span className={`day-modal-stat-value ${isOvertime ? "overtime" : "missing"}`}>
             {diff}
           </span>
         </div>
       </div>
 
+      {/* Observação com Estilo de Citação */}
       {observation && (
-        <div className="info-box" style={{ background: 'rgba(255, 255, 255, 0.02)', marginTop: '12px', textAlign: 'left' }}>
-          <span className="info-label" style={{ fontSize: '0.8rem', opacity: 0.6 }}>Observação</span>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.95rem', fontWeight: 'normal', color: 'rgba(255, 255, 255, 0.9)', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
-            {observation}
-          </p>
+        <div className="day-modal-observation">
+          <div className="day-modal-observation-title">Observação</div>
+          <p className="day-modal-observation-text">{observation}</p>
         </div>
       )}
     </div>

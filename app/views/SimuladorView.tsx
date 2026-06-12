@@ -135,17 +135,17 @@ export function SimuladorView({ userGoal, userId }: SimuladorViewProps) {
                 <div className="day-header-mob">
                   <strong>{d.name}</strong>
                   <span className={`day-res-mob ${d.diff > 0 ? 'pos' : d.diff < 0 ? 'neg' : ''}`}>
-                  {d.diff !== 0 ? minutesToHHMM(Math.abs(d.diff)) : '--:--'}
+                  {d.diff !== 0 ? `${d.diff > 0 ? '+' : '-'}${minutesToHHMM(Math.abs(d.diff))}` : '00:00'}
                   </span>
                 </div>
 
                 <div className="col-name desktop-only"><strong>{d.name}</strong></div>
-                <div className="day-field goal"><label className="mob-label">Meta</label><input value={d.goal} onChange={e => updateField(d.id, 'goal', e.target.value)} maxLength={5} /></div>
-                <div className="day-field"><label className="mob-label">Entrada</label><input placeholder="--:--" value={d.start} onChange={e => updateField(d.id, 'start', e.target.value)} maxLength={5} /></div>
-                <div className="day-field"><label className="mob-label">Saída</label><input placeholder="--:--" value={d.end} onChange={e => updateField(d.id, 'end', e.target.value)} maxLength={5} /></div>
-                <div className="day-field"><label className="mob-label">Almoço</label><input placeholder="00:00" value={d.break} onChange={e => updateField(d.id, 'break', e.target.value)} maxLength={5} /></div>
+                <div className="day-field goal"><label className="mob-label">Meta</label><input value={d.goal} onChange={e => updateField(d.id, 'goal', e.target.value)} maxLength={5} data-bwignore="true" /></div>
+                <div className="day-field"><label className="mob-label">Entrada</label><input placeholder="--:--" value={d.start} onChange={e => updateField(d.id, 'start', e.target.value)} maxLength={5} data-bwignore="true" /></div>
+                <div className="day-field"><label className="mob-label">Saída</label><input placeholder="--:--" value={d.end} onChange={e => updateField(d.id, 'end', e.target.value)} maxLength={5} data-bwignore="true" /></div>
+                <div className="day-field"><label className="mob-label">Almoço</label><input placeholder="00:00" value={d.break} onChange={e => updateField(d.id, 'break', e.target.value)} maxLength={5} data-bwignore="true" /></div>
                 <div className={`col-res-final desktop-only ${d.diff > 0 ? 'pos' : d.diff < 0 ? 'neg' : ''}`}>
-                  {d.diff !== 0 ? minutesToHHMM(Math.abs(d.diff)) : '--:--'}
+                  {d.diff !== 0 ? `${d.diff > 0 ? '+' : '-'}${minutesToHHMM(Math.abs(d.diff))}` : '00:00'}
                 </div>
               </div>
             ))}
@@ -158,7 +158,7 @@ export function SimuladorView({ userGoal, userId }: SimuladorViewProps) {
               <span className="balance-label">Saldo Semanal</span>
               <div className={`balance-value ${results.hasNegative ? 'neg' : results.totalDiff > 0 ? 'pos' : ''}`}>
                 {results.totalDiff !== 0 && (results.hasNegative ? <TrendingDown size={20} /> : <TrendingUp size={20} />)}
-                {results.totalDiff === 0 ? '00:00' : minutesToHHMM(Math.abs(results.totalDiff))}
+                {results.totalDiff === 0 ? '00:00' : `${results.totalDiff > 0 ? '+' : '-'}${minutesToHHMM(Math.abs(results.totalDiff))}`}
               </div>
             </div>
 

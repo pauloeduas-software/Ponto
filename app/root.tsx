@@ -2,7 +2,7 @@ import "./app.css";
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, Link, useLocation, useRouteLoaderData, useNavigation, useRevalidator } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
 import { useEffect, useState, useMemo } from "react";
-import { Clock, Shield, CalendarClock, LayoutDashboard, Calculator, User as UserIcon } from "lucide-react";
+import { Clock, Shield, CalendarClock, LayoutDashboard, Calculator, User as UserIcon, Menu } from "lucide-react";
 import { getUser } from "./services/session.server";
 import { Avatar } from "./components/Avatar";
 
@@ -24,7 +24,7 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
   if (formMethod && formMethod !== "GET") {
     return true;
   }
-  
+
   // Revalida se houver um resultado de action bem-sucedido
   if (actionResult) {
     return true;
@@ -48,12 +48,12 @@ export const links = () => [
   // Preload: o browser busca a fonte antes mesmo de processar o CSS
   {
     rel: "preload",
-    href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap",
     as: "style",
   },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap",
   },
   { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
 ];
@@ -61,34 +61,52 @@ export const links = () => [
 function Sidebar({ user }: { user: any }) {
   const location = useLocation();
   const path = location.pathname;
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <aside className="sidebar">
-      <Link to="/" prefetch="render" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
-        <Clock size={24} />
-      </Link>
+    <aside className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
+      <div className="sidebar-top">
+        <button className="sidebar-toggle" onClick={() => setIsExpanded(!isExpanded)} title="Expandir menu">
+          <Menu size={24} className="sidebar-icon" />
+          {isExpanded && <span className="sidebar-text">Recolher</span>}
+        </button>
 
-      {(user?.role === 'admin' || user?.role === 'manager') && (
-        <Link to="/admin" prefetch="render" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
-          <Shield size={24} />
+        <div className="sidebar-nav">
+          <Link to="/" prefetch="render" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
+            <Clock size={24} className="sidebar-icon" />
+            {isExpanded && <span className="sidebar-text">Bater Ponto</span>}
+          </Link>
+
+          {(user?.role === 'admin' || user?.role === 'manager') && (
+            <Link to="/admin" prefetch="render" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
+              <Shield size={24} className="sidebar-icon" />
+              {isExpanded && <span className="sidebar-text">Administrativo</span>}
+            </Link>
+          )}
+
+          <Link to="/escala" prefetch="render" className={`sidebar-link ${path === '/escala' ? 'active' : ''}`} title="Escala">
+            <CalendarClock size={24} className="sidebar-icon" />
+            {isExpanded && <span className="sidebar-text">Escala</span>}
+          </Link>
+
+          <Link to="/dashboard" prefetch="render" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
+            <LayoutDashboard size={24} className="sidebar-icon" />
+            {isExpanded && <span className="sidebar-text">Meu Histórico</span>}
+          </Link>
+
+          <Link to="/simulador" prefetch="render" className={`sidebar-link ${path === '/simulador' ? 'active' : ''}`} title="Simulador de Horas">
+            <Calculator size={24} className="sidebar-icon" />
+            {isExpanded && <span className="sidebar-text">Simulador</span>}
+          </Link>
+        </div>
+      </div>
+
+      <div className="sidebar-bottom">
+        <Link to="/perfil" prefetch="render" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
+          <Avatar src={user?.avatarUrl} name={user?.name} size={28} className="sidebar-avatar" />
+          {isExpanded && <span className="sidebar-text">Minha Conta</span>}
         </Link>
-      )}
-
-      <Link to="/escala" prefetch="render" className={`sidebar-link ${path === '/escala' ? 'active' : ''}`} title="Escala">
-        <CalendarClock size={24} />
-      </Link>
-
-      <Link to="/dashboard" prefetch="render" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
-        <LayoutDashboard size={24} />
-      </Link>
-      
-      <Link to="/simulador" prefetch="render" className={`sidebar-link ${path === '/simulador' ? 'active' : ''}`} title="Simulador de Horas">
-        <Calculator size={24} />
-      </Link>
-
-      <Link to="/perfil" prefetch="render" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
-        <Avatar src={user?.avatarUrl} name={user?.name} size={28} className="sidebar-avatar" />
-      </Link>
+      </div>
     </aside>
   );
 }

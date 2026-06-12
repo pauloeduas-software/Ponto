@@ -19,8 +19,8 @@ export function Avatar({ src, name, size = 40, style, className = "", onClick }:
       style={{
         width: `${size}px`,
         height: `${size}px`,
-        borderRadius: '14px',
-        background: 'var(--accent-gradient)',
+        borderRadius: '8px',
+        background: 'var(--primary)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

@@ -33,7 +33,7 @@ export function useDashboardView(user: any, history: SavedDay[], fetcher: any) {
     const totalDiff = filtered.reduce((acc, h) => acc + h.diffMins, 0);
     return {
       worked: minutesToHHMM(totalMins),
-      balance: minutesToHHMM(Math.abs(totalDiff)),
+      balance: totalDiff === 0 ? '00:00' : `${totalDiff > 0 ? '+' : '-'}${minutesToHHMM(Math.abs(totalDiff))}`,
       isPositive: totalDiff >= 0,
       count: filtered.length
     };

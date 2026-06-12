@@ -119,6 +119,18 @@ const actionHandlers: Record<string, ActionHandler> = {
     return { success: true };
   },
 
+  updatePrimaryTeam: async (formData) => {
+    const userId = formData.get("userId") as string;
+    const teamId = formData.get("teamId") as string;
+    if (!userId || !teamId) return { error: "Dados inválidos" };
+    
+    await prisma.user.update({
+      where: { id: userId },
+      data: { teamId }
+    });
+    return { success: true };
+  },
+
   updateUserTeamRole: async (formData) => {
     const userId = formData.get("userId") as string;
     const teamId = formData.get("teamId") as string;
