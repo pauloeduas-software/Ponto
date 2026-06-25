@@ -8,7 +8,9 @@ import { Avatar } from "./components/Avatar";
 
 export async function loader({ request }: { request: Request }) {
   const user = await getUser(request);
-  return { user };
+  const cookieHeader = request.headers.get("Cookie");
+  const theme = cookieHeader?.match(/theme=(light|dark)/)?.[1] || "dark";
+  return { user, theme };
 }
 
 // Otimização: Evita revalidação desnecessária do root loader nas trocas normais de página.
@@ -65,15 +67,18 @@ function Sidebar({ user }: { user: any }) {
   const [theme, setTheme] = useState("dark");
 
   useEffect(() => {
+    // Sincroniza o estado inicial com o localStorage caso o cookie e local storage estejam diferentes
     const saved = localStorage.getItem("theme") || "dark";
-    setTheme(saved);
-    document.documentElement.setAttribute("data-theme", saved);
+    if (saved !== theme) {
+      setTheme(saved);
+    }
   }, []);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
+    document.cookie = `theme=${newTheme}; path=/; max-age=31536000`;
     document.documentElement.setAttribute("data-theme", newTheme);
   };
 
@@ -142,11 +147,12 @@ function ProgressBar() {
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   // BUG FIX: Layout cannot use useLoaderData. useRouteLoaderData("root") is the correct hook here.
-  const data = useRouteLoaderData("root") as { user: any } | undefined;
+  const data = useRouteLoaderData("root") as { user: any, theme: string } | undefined;
   const isLoginPage = location.pathname === "/login";
+  const theme = data?.theme || "dark";
 
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-theme={theme}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
