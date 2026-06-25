@@ -12,6 +12,7 @@ import { Avatar } from "../components/Avatar";
 import { DayInfo } from "../components/DayInfo";
 import { type SavedDay } from "../types";
 import "../styles/calendar.css";
+import "../styles/dashboard.css";
 import "../styles/admin.css";
 
 interface AdminViewProps {
