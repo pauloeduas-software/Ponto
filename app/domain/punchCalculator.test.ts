@@ -26,7 +26,7 @@ describe("calculatePunchMetrics", () => {
     expect(result.workMins).toBe(540); // 9 horas trabalhadas
     expect(result.diffMins).toBe(60); // +1 hora extra
     expect(result.totalWorkedStr).toBe("09:00");
-    expect(result.diffStr).toBe("01:00");
+    expect(result.diffStr).toBe("+01:00");
     expect(result.isOvertime).toBe(true);
     expect(result.breakMins).toBe(60);
   });
@@ -40,7 +40,7 @@ describe("calculatePunchMetrics", () => {
     expect(result.workMins).toBe(420); // 7 horas trabalhadas
     expect(result.diffMins).toBe(-60); // -1 hora a menos
     expect(result.totalWorkedStr).toBe("07:00");
-    expect(result.diffStr).toBe("01:00");
+    expect(result.diffStr).toBe("-01:00");
     expect(result.isOvertime).toBe(false);
   });
 

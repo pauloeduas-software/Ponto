@@ -2,7 +2,7 @@ import "./app.css";
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, Link, useLocation, useRouteLoaderData, useNavigation, useRevalidator } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
 import { useEffect, useState, useMemo } from "react";
-import { Clock, Shield, CalendarClock, LayoutDashboard, Calculator, User as UserIcon, Menu } from "lucide-react";
+import { Clock, Shield, CalendarClock, LayoutDashboard, Calculator, User as UserIcon, Menu, Sun, Moon } from "lucide-react";
 import { getUser } from "./services/session.server";
 import { Avatar } from "./components/Avatar";
 
@@ -62,6 +62,20 @@ function Sidebar({ user }: { user: any }) {
   const location = useLocation();
   const path = location.pathname;
   const [isExpanded, setIsExpanded] = useState(false);
+  const [theme, setTheme] = useState("dark");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") || "dark";
+    setTheme(saved);
+    document.documentElement.setAttribute("data-theme", saved);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
+  };
 
   return (
     <aside className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
@@ -102,6 +116,11 @@ function Sidebar({ user }: { user: any }) {
       </div>
 
       <div className="sidebar-bottom">
+        <button onClick={toggleTheme} className="sidebar-link" title="Mudar Tema" style={{ border: 'none', cursor: 'pointer', marginBottom: '8px' }}>
+          {theme === "dark" ? <Sun size={24} className="sidebar-icon" /> : <Moon size={24} className="sidebar-icon" />}
+          {isExpanded && <span className="sidebar-text">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>}
+        </button>
+
         <Link to="/perfil" prefetch="render" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
           <Avatar src={user?.avatarUrl} name={user?.name} size={28} className="sidebar-avatar" />
           {isExpanded && <span className="sidebar-text">Minha Conta</span>}

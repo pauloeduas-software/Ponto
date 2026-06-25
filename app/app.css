@@ -1745,3 +1745,240 @@ input:focus {
   border-color: rgba(0, 102, 255, 0.6);
   color: #80aaff;
 }
+
+/* =========================================================================
+   LIGHT MODE (Chronos Mono Blue Light)
+   ========================================================================= */
+:root[data-theme="light"] {
+  --primary: #0066ff;
+  --primary-glow: rgba(0, 102, 255, 0.08);
+  --secondary: #0044cc;
+  --bg: #f0f2f5;
+  --card-bg: #ffffff;
+  --text: #0d1117;
+  --text-muted: #5a6472;
+  --text-dim: #9aa3ad;
+  --success: #0066ff;
+  --error: #e03048;
+  --warning: #d97706;
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --surface: rgba(0, 0, 0, 0.03);
+  --surface-light: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] body::before {
+  opacity: 0.25;
+}
+
+[data-theme="light"] .sidebar {
+  background: var(--card-bg);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .sidebar-link:hover {
+  background: var(--surface-light);
+}
+
+[data-theme="light"] .sidebar-link.active {
+  background: rgba(0, 102, 255, 0.06);
+}
+
+[data-theme="light"] .page-title,
+[data-theme="light"] .premium-modal-title,
+[data-theme="light"] .sheet-title,
+[data-theme="light"] .modal-header h2 {
+  color: var(--text);
+}
+
+[data-theme="light"] .card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] input,
+[data-theme="light"] .day-field input {
+  background: white;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] .day-field input:focus {
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+  background: white;
+}
+
+[data-theme="light"] .icon-btn {
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .modal-overlay,
+[data-theme="light"] .premium-modal-overlay.visible {
+  background: rgba(13, 17, 23, 0.4);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+}
+
+[data-theme="light"] .modal-content,
+[data-theme="light"] .premium-modal-content {
+  background: white;
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 24px 56px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+[data-theme="light"] .btn-close,
+[data-theme="light"] .premium-btn-close,
+[data-theme="light"] .sheet-btn-close {
+  background: var(--surface-light);
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .btn-close:hover,
+[data-theme="light"] .premium-btn-close:hover,
+[data-theme="light"] .sheet-btn-close:hover {
+  background: rgba(224, 48, 72, 0.08);
+  color: var(--error);
+  border-color: rgba(224, 48, 72, 0.2);
+}
+
+[data-theme="light"] .stat-card,
+[data-theme="light"] .info-box {
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .action-btn {
+  background: white;
+  border-color: var(--glass-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .sheet-content {
+  background: white;
+}
+
+[data-theme="light"] .premium-modal-icon {
+  background: rgba(0, 102, 255, 0.08);
+  box-shadow: none;
+}
+
+[data-theme="light"] .stat-item strong {
+  color: var(--text);
+}
+
+[data-theme="light"] .escala-modal-employee-card {
+  background: white;
+  border-color: var(--glass-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .escala-modal-employee-card:hover {
+  background: var(--surface-light);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .missing {
+  color: var(--error);
+}
+
+[data-theme="light"] .day-modal-info-container {
+  color: var(--text);
+}
+
+
+
+/* =========================================================================
+   LIGHT MODE FIXES (Subbar, Selects, and toggles)
+   ========================================================================= */
+[data-theme="light"] .page-subbar {
+  background: var(--surface);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .subbar-toggle,
+[data-theme="light"] .subbar-filter,
+[data-theme="light"] .subbar-balance,
+[data-theme="light"] .mini-toggle-container {
+  background: var(--card-bg);
+  border-color: var(--glass-border);
+}
+
+[data-theme="light"] .subbar-toggle-btn.active,
+[data-theme="light"] .mini-toggle-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.2);
+}
+
+[data-theme="light"] .subbar-toggle-btn {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .subbar-filter-label {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .month-select-clean,
+[data-theme="light"] .subbar-filter select,
+[data-theme="light"] .sidebar-select {
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--text);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+[data-theme="light"] .month-select-clean option,
+[data-theme="light"] .subbar-filter select option,
+[data-theme="light"] .sidebar-select option {
+  background: var(--card-bg);
+  color: var(--text);
+}
+
+[data-theme="light"] .subbar-balance {
+  background: white;
+  border-color: rgba(0,0,0,0.08);
+}
+
+[data-theme="light"] .subbar-balance-label {
+  color: var(--text-dim);
+}
+
+[data-theme="light"] .subbar-balance-value.missing {
+  color: var(--text);
+}
+
+[data-theme="light"] .subbar-filter:hover,
+[data-theme="light"] .subbar-filter:focus-within {
+  border-color: rgba(0, 102, 255, 0.2);
+}
+
+[data-theme="light"] .dashboard-table-row-clickable:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .dashboard-table-punch-tag {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: var(--text);
+}
+
+[data-theme="light"] .dashboard-table-row-clickable:hover .dashboard-table-punch-tag {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .filter-pill {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .filter-pill:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+
+
+[data-theme="light"] .action-btn {
+  color: var(--text);
+}
+

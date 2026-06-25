@@ -732,3 +732,73 @@
   background: rgba(255, 74, 90, 0.1);
   border-style: solid;
 }
+
+/* =========================================================================
+   LIGHT MODE FIXES (Chronos Mono Blue Light)
+   ========================================================================= */
+[data-theme="light"] .user-grid-card {
+  background: var(--card-bg);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .user-grid-card:hover {
+  background: var(--surface-light);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .user-grid-name {
+  color: var(--text);
+}
+
+[data-theme="light"] .badge-role-user {
+  background: var(--surface-light);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .settings-card {
+  background: var(--card-bg);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .settings-card-row {
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .settings-select {
+  background: var(--surface-light);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--text);
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+[data-theme="light"] .settings-select option {
+  background: var(--card-bg);
+  color: var(--text);
+}
+
+[data-theme="light"] .settings-input {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .settings-input:focus {
+  background: white;
+}
+
+[data-theme="light"] .settings-btn-primary {
+  background: var(--surface-light);
+  color: var(--text);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .settings-btn-primary:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .settings-card-footer {
+  background: var(--surface-light);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+

@@ -257,3 +257,59 @@
   color: #ef4444;
   border-color: rgba(239, 68, 68, 0.2);
 }
+
+/* =========================================================================
+   LIGHT MODE (Chronos Mono Blue Light)
+   ========================================================================= */
+[data-theme="light"] .profile-hero {
+  background: var(--card-bg);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .profile-name-input {
+  color: var(--text);
+}
+
+[data-theme="light"] .profile-badge {
+  background: var(--surface);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .profile-badge.admin {
+  background: rgba(0, 102, 255, 0.08);
+  border-color: rgba(0, 102, 255, 0.2);
+  color: var(--primary);
+}
+
+[data-theme="light"] .profile-card {
+  background: var(--card-bg);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .profile-card-title {
+  color: var(--text);
+}
+
+[data-theme="light"] .team-icon {
+  background: var(--surface-light);
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .team-name {
+  color: var(--text);
+}
+
+[data-theme="light"] .profile-card.admin-card {
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.05) 0%, rgba(0, 102, 255, 0.01) 100%);
+  border-color: rgba(0, 102, 255, 0.15);
+}
+
+[data-theme="light"] .btn-logout {
+  background: white;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
