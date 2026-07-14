@@ -70,7 +70,7 @@ export function DashboardView({ user, history }: DashboardViewProps) {
           <a
             href={`/api/export-punches?month=${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
             className="action-btn"
-          >Exportar CSV</a>
+          >Exportar</a>
         </div>
       </div>
 

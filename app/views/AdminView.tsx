@@ -93,7 +93,7 @@ export function AdminView({
             <a
               href={`/api/export-punches?month=${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}&userId=${selectedUserId}`}
               className="action-btn"
-            >Exportar CSV</a>
+            >Exportar</a>
           )}
         </div>
       </div>

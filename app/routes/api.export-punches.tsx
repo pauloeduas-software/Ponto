@@ -61,46 +61,95 @@ export async function loader({ request }: { request: Request }) {
     orderBy: { date: "asc" }
   });
 
-  const headers = [
+  let maxPunches = 0;
+  const parsedRecords = records.map(r => {
+    let punches: string[] = [];
+    try {
+      punches = JSON.parse(r.punches);
+    } catch {
+      // ignore
+    }
+    if (punches.length > maxPunches) maxPunches = punches.length;
+    return { ...r, parsedPunches: punches };
+  });
+
+  if (maxPunches % 2 !== 0) maxPunches += 1;
+  if (maxPunches === 0) maxPunches = 2; // Default to at least 1 pair (Entrada/Saída)
+
+  const headers: any[] = [
     { value: "Data", fontWeight: "bold" as const, align: "center" as const },
-    { value: "Batidas", fontWeight: "bold" as const },
+  ];
+  
+  const columns: any[] = [
+    { width: 15 },
+  ];
+
+  for (let i = 0; i < maxPunches; i++) {
+    const isEntrada = i % 2 === 0;
+    const number = Math.floor(i / 2) + 1;
+    headers.push({
+      value: isEntrada ? `Entrada ${number}` : `Saída ${number}`,
+      fontWeight: "bold" as const, align: "center" as const
+    });
+    columns.push({ width: 12 });
+  }
+
+  headers.push(
     { value: "Meta Diária", fontWeight: "bold" as const, align: "center" as const },
     { value: "Trabalhado", fontWeight: "bold" as const, align: "center" as const },
     { value: "Saldo", fontWeight: "bold" as const, align: "center" as const },
     { value: "Observação", fontWeight: "bold" as const }
-  ];
+  );
+  
+  columns.push(
+    { width: 12 },
+    { width: 12 },
+    { width: 12 },
+    { width: 40 }
+  );
 
-  const rows = records.map(r => {
+  const rows = parsedRecords.map(r => {
     const dateFormatted = r.date.split("-").reverse().join("/");
-    const formattedPunches = formatPunches(r.punches);
     const goalHHMM = minutesToHHMM(r.goalMins);
     const workedHHMM = minutesToHHMM(r.workMins);
     const sign = r.diffMins >= 0 ? "+" : "-";
     const diffHHMM = sign + minutesToHHMM(Math.abs(r.diffMins));
     const obs = r.observation || "";
-    return [
-      { value: dateFormatted, align: "center" as const },
-      { value: formattedPunches },
-      { value: goalHHMM, align: "center" as const },
-      { value: workedHHMM, align: "center" as const },
-      { value: diffHHMM, align: "center" as const },
-      { value: obs }
-    ];
-  });
 
-  const columns = [
-    { width: 12 },
-    { width: 35 },
-    { width: 12 },
-    { width: 12 },
-    { width: 12 },
-    { width: 40 }
-  ];
+    const row: any[] = [
+      { type: String, value: dateFormatted, format: "@", align: "center" as const },
+    ];
+
+    for (let i = 0; i < maxPunches; i++) {
+      const punchVal = r.parsedPunches[i];
+      if (punchVal && punchVal !== "--:--") {
+        row.push({
+          type: String,
+          value: punchVal,
+          format: "@",
+          align: "center" as const
+        });
+      } else {
+        row.push({
+          type: String,
+          value: "--:--",
+          format: "@",
+          align: "center" as const
+        });
+      }
+    }
+
+    row.push(
+      { type: String, value: goalHHMM, format: "@", align: "center" as const },
+      { type: String, value: workedHHMM, format: "@", align: "center" as const },
+      { type: String, value: diffHHMM, format: "@", align: "center" as const },
+      { type: String, value: obs, format: "@" }
+    );
+    return row;
+  });
 
   const buf = await writeXlsxFile([headers, ...rows], {
     columns,
-    // Em alguns runtimes Node/Bun precisamos de buffer para obter ArrayBuffer/Buffer
-    // toBuffer() retorna uma Promise de Buffer
   }).toBuffer();
 
   const [year, monthNum] = month.split("-");
@@ -113,19 +162,4 @@ export async function loader({ request }: { request: Request }) {
       "Content-Disposition": `attachment; filename="${filename}"`
     }
   });
-}
-
-function formatPunches(punchesJson: string): string {
-  try {
-    const list: string[] = JSON.parse(punchesJson);
-    const pairs: string[] = [];
-    for (let i = 0; i < list.length; i += 2) {
-      const entrada = list[i] || "--:--";
-      const saida = list[i + 1] || "--:--";
-      pairs.push(`${entrada} -> ${saida}`);
-    }
-    return pairs.join(" / ");
-  } catch {
-    return "";
-  }
 }
