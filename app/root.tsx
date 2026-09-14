@@ -1,8 +1,8 @@
 import "./app.css";
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, Link, useLocation, useRouteLoaderData, useNavigation, useRevalidator } from "react-router";
 import type { ShouldRevalidateFunction } from "react-router";
-import { useEffect, useState, useMemo } from "react";
-import { Clock, Shield, CalendarClock, LayoutDashboard, Calculator, User as UserIcon, Menu, Sun, Moon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Clock, Shield, CalendarClock, LayoutDashboard, Menu, Sun, Moon } from "lucide-react";
 import { getUser } from "./services/session.server";
 import { Avatar } from "./components/Avatar";
 
@@ -40,6 +40,11 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
   return false;
 };
 
+export const meta = () => [
+  { title: "Ponto" },
+  { name: "description", content: "Sistema de controle de jornada e gestão de escalas." },
+];
+
 export const links = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
@@ -57,13 +62,12 @@ export const links = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap",
   },
-  { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+  { rel: "icon", type: "image/svg+xml", href: "/favicon.svg?v=3" },
 ];
 
-function Sidebar({ user }: { user: any }) {
+function Sidebar({ user, expanded, onToggle }: { user: any; expanded: boolean; onToggle: () => void }) {
   const location = useLocation();
   const path = location.pathname;
-  const [isExpanded, setIsExpanded] = useState(false);
   const [theme, setTheme] = useState("dark");
 
   useEffect(() => {
@@ -82,53 +86,101 @@ function Sidebar({ user }: { user: any }) {
     document.documentElement.setAttribute("data-theme", newTheme);
   };
 
+  const sections = [
+    {
+      label: "Principal",
+      items: [
+        { to: "/", label: "Bater Ponto", mobileLabel: "Ponto", icon: Clock, active: path === "/" },
+        { to: "/escala", label: "Escala", mobileLabel: "Escala", icon: CalendarClock, active: path === "/escala" },
+        { to: "/dashboard", label: "Meu Histórico", mobileLabel: "Histórico", icon: LayoutDashboard, active: path.includes("/dashboard") },
+      ],
+    },
+    ...((user?.role === "admin" || user?.role === "manager")
+      ? [{
+          label: "Gestão",
+          items: [
+            { to: "/admin", label: "Relatório", mobileLabel: "Relatório", icon: Shield, active: path === "/admin" },
+          ],
+        }]
+      : []),
+  ];
+
+  const roleLabel =
+    user?.role === "admin" ? "Administrador" : user?.role === "manager" ? "Gerente" : "Colaborador";
+
   return (
-    <aside className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
+    <aside className={`sidebar ${expanded ? 'expanded' : ''}`}>
       <div className="sidebar-top">
-        <button className="sidebar-toggle" onClick={() => setIsExpanded(!isExpanded)} title="Expandir menu">
-          <Menu size={24} className="sidebar-icon" />
-          {isExpanded && <span className="sidebar-text">Recolher</span>}
-        </button>
-
-        <div className="sidebar-nav">
-          <Link to="/" prefetch="render" className={`sidebar-link ${path === '/' ? 'active' : ''}`} title="Bater Ponto">
-            <Clock size={24} className="sidebar-icon" />
-            {isExpanded && <span className="sidebar-text">Bater Ponto</span>}
-          </Link>
-
-          {(user?.role === 'admin' || user?.role === 'manager') && (
-            <Link to="/admin" prefetch="render" className={`sidebar-link ${path === '/admin' ? 'active' : ''}`} title="Administrativo">
-              <Shield size={24} className="sidebar-icon" />
-              {isExpanded && <span className="sidebar-text">Administrativo</span>}
-            </Link>
-          )}
-
-          <Link to="/escala" prefetch="render" className={`sidebar-link ${path === '/escala' ? 'active' : ''}`} title="Escala">
-            <CalendarClock size={24} className="sidebar-icon" />
-            {isExpanded && <span className="sidebar-text">Escala</span>}
-          </Link>
-
-          <Link to="/dashboard" prefetch="render" className={`sidebar-link ${path.includes('/dashboard') ? 'active' : ''}`} title="Meu Histórico">
-            <LayoutDashboard size={24} className="sidebar-icon" />
-            {isExpanded && <span className="sidebar-text">Meu Histórico</span>}
-          </Link>
-
-          <Link to="/simulador" prefetch="render" className={`sidebar-link ${path === '/simulador' ? 'active' : ''}`} title="Simulador de Horas">
-            <Calculator size={24} className="sidebar-icon" />
-            {isExpanded && <span className="sidebar-text">Simulador</span>}
-          </Link>
+        <div className="sidebar-brand">
+          <div className="sidebar-brand-link">
+            <img src="/favicon.svg?v=3" alt="" className="sidebar-logo" />
+            <span className="sidebar-brand-name">Ponto</span>
+          </div>
         </div>
+
+        <div className="sidebar-collapse-wrap">
+          <button
+            type="button"
+            className="sidebar-collapse"
+            onClick={onToggle}
+            aria-label={expanded ? "Recolher menu" : "Expandir menu"}
+            data-tip={expanded ? "Recolher" : "Expandir"}
+          >
+            <Menu size={20} className="sidebar-icon" />
+            <span className="sidebar-text">Recolher</span>
+          </button>
+        </div>
+
+        <nav className="sidebar-nav">
+          {sections.map((section) => (
+            <div className="sidebar-section" key={section.label}>
+              <span className="sidebar-section-label">{section.label}</span>
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    prefetch="render"
+                    className={`sidebar-link ${item.active ? 'active' : ''}`}
+                    aria-label={item.label}
+                    data-tip={item.label}
+                  >
+                    <Icon size={20} className="sidebar-icon" />
+                    <span className="sidebar-text">{item.label}</span>
+                    <span className="sidebar-mobile-label">{item.mobileLabel}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
       </div>
 
       <div className="sidebar-bottom">
-        <button onClick={toggleTheme} className="sidebar-link" title="Mudar Tema" style={{ border: 'none', cursor: 'pointer', marginBottom: '8px' }}>
-          {theme === "dark" ? <Sun size={24} className="sidebar-icon" /> : <Moon size={24} className="sidebar-icon" />}
-          {isExpanded && <span className="sidebar-text">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>}
+        <button
+          type="button"
+          className="sidebar-link sidebar-theme-toggle"
+          onClick={toggleTheme}
+          aria-label={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
+          data-tip={theme === "dark" ? "Modo Claro" : "Modo Escuro"}
+        >
+          {theme === "dark" ? <Sun size={22} className="sidebar-icon" /> : <Moon size={22} className="sidebar-icon" />}
+          <span className="sidebar-text">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>
         </button>
 
-        <Link to="/perfil" prefetch="render" className={`sidebar-link ${path === '/perfil' ? 'active' : ''}`} title="Minha Conta">
+        <Link
+          to="/perfil"
+          prefetch="render"
+          className={`sidebar-link sidebar-profile ${path === '/perfil' ? 'active' : ''}`}
+          aria-label="Minha Conta"
+          data-tip="Minha Conta"
+        >
           <Avatar src={user?.avatarUrl} name={user?.name} size={28} className="sidebar-avatar" />
-          {isExpanded && <span className="sidebar-text">Minha Conta</span>}
+          <span className="sidebar-profile-meta">
+            <span className="sidebar-profile-name">{user?.name || "Minha Conta"}</span>
+            <span className="sidebar-profile-role">{roleLabel}</span>
+          </span>
         </Link>
       </div>
     </aside>
@@ -150,6 +202,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData("root") as { user: any, theme: string } | undefined;
   const isLoginPage = location.pathname === "/login";
   const theme = data?.theme || "dark";
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-expanded") === "1";
+    setSidebarExpanded(saved);
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarExpanded((prev) => {
+      const next = !prev;
+      localStorage.setItem("sidebar-expanded", next ? "1" : "0");
+      return next;
+    });
+  };
 
   return (
     <html lang="pt-BR" data-theme={theme}>
@@ -165,8 +231,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ProgressBar />
-        {!isLoginPage && <Sidebar user={data?.user} />}
-        {children}
+        {!isLoginPage && <Sidebar user={data?.user} expanded={sidebarExpanded} onToggle={toggleSidebar} />}
+        <div className="app-content" data-sidebar={sidebarExpanded ? "expanded" : "collapsed"}>
+          {children}
+        </div>
         <ScrollRestoration />
         <Scripts />
       </body>
