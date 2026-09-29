@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
-const postgresUrl = process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@localhost:5432/ponto_db";
+const postgresUrl = process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@localhost:3002/ponto_db";
 
 const pool = new pg.Pool({
   connectionString: postgresUrl,

@@ -2,6 +2,7 @@ import { useLoaderData } from "react-router";
 import { requireUserId, getUser } from "../services/session.server";
 import { getDashboardHistory, savePunchRecord, deletePunchRecord } from "../services/dashboardService.server";
 import { DashboardView } from "../views/DashboardView";
+import { isValidDate, parsePunchPayload, sanitizeObservation } from "../utils/validation.server";
 
 export async function loader({ request }: { request: Request }) {
   const userId = await requireUserId(request);
@@ -18,23 +19,26 @@ export async function action({ request }: { request: Request }) {
 
   const formData = await request.formData();
   const actionType = formData.get("_action");
-  const date = formData.get("date") as string;
+  const date = formData.get("date");
 
   if (actionType === "delete") {
+    if (!isValidDate(date)) return { error: "Data inválida." };
     await deletePunchRecord(userId, date);
     return { success: true };
   }
 
   if (actionType === "save") {
+    const payload = parsePunchPayload(formData);
+    if (!payload) return { error: "Dados inválidos." };
     await savePunchRecord(
       userId,
-      date,
-      formData.get("punches") as string,
-      parseInt(formData.get("workMins") as string),
-      parseInt(formData.get("diffMins") as string),
-      formData.get("isOvertime") === "true" ? 1 : 0,
-      formData.get("goal") as string,
-      formData.get("observation") as string || undefined
+      payload.date,
+      payload.punches,
+      payload.workMins,
+      payload.diffMins,
+      payload.isOvertime ? 1 : 0,
+      payload.goal,
+      sanitizeObservation(formData.get("observation"))
     );
     return { success: true };
   }

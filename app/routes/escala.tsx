@@ -30,7 +30,17 @@ export async function action({ request }: { request: Request }) {
   const targetUserId = formData.get("userId") as string;
 
   if (actionType === "save") {
-    const shifts = JSON.parse(formData.get("shifts") as string) as Shift[];
+    let shifts: Shift[];
+    try {
+      shifts = JSON.parse(formData.get("shifts") as string);
+    } catch {
+      return { error: "Dados inválidos." };
+    }
+    const validShifts = Array.isArray(shifts) && shifts.length <= 500 && shifts.every(s =>
+      s && /^\d{4}-\d{2}-\d{2}$/.test(s.date) && typeof s.type === "string" && s.type.length <= 50 &&
+      (!s.startTime || /^[0-9:]{0,5}$/.test(s.startTime)) && (!s.endTime || /^[0-9:]{0,5}$/.test(s.endTime))
+    );
+    if (!targetUserId || !validShifts) return { error: "Dados inválidos." };
     return await saveShifts(user, targetUserId, shifts);
   }
 

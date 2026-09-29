@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { Form, useNavigation } from "react-router";
-import {User, Lock, LogIn, UserPlus, Loader2, AlertCircle, Clock } from "lucide-react";
+import { User, Lock, LogIn, Loader2, AlertCircle, Clock } from "lucide-react";
 
 interface LoginViewProps {
   actionData: any;
@@ -9,7 +8,6 @@ interface LoginViewProps {
 export function LoginView({ actionData }: LoginViewProps) {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const [isRegistering, setIsRegistering] = useState(false);
 
   return (
     <div className="login-container">
@@ -18,8 +16,8 @@ export function LoginView({ actionData }: LoginViewProps) {
           <div className="login-logo">
             <Clock size={32} />
           </div>
-          <h1>{isRegistering ? "Criar Conta" : "Entrar no Ponto"}</h1>
-          <p>{isRegistering ? "Registre-se para começar a marcar seu ponto" : "Bem-vindo de volta! Acesse sua conta"}</p>
+          <h1>Entrar no Ponto</h1>
+          <p>Bem-vindo de volta! Acesse sua conta</p>
         </div>
 
         {actionData?.error && (
@@ -30,15 +28,6 @@ export function LoginView({ actionData }: LoginViewProps) {
         )}
 
         <Form method="post" className="login-form">
-          <input type="hidden" name="_action" value={isRegistering ? "register" : "login"} />
-
-          {isRegistering && (
-            <div className="input-field">
-              <User size={18} />
-              <input type="text" id="name-input" name="name" placeholder="Seu Nome Completo" autoComplete="name" required />
-            </div>
-          )}
-
           <div className="input-field">
             <User size={18} />
             <input type="text" id="username-input" name="username" placeholder="Nome de Usuário" autoComplete="username" required />
@@ -46,25 +35,13 @@ export function LoginView({ actionData }: LoginViewProps) {
 
           <div className="input-field">
             <Lock size={18} />
-            <input type="password" id="password-input" name="password" placeholder="Sua Senha" autoComplete={isRegistering ? "new-password" : "current-password"} required />
+            <input type="password" id="password-input" name="password" placeholder="Sua Senha" autoComplete="current-password" required />
           </div>
 
           <button type="submit" className="login-btn" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <Loader2 className="animate-spin" />
-            ) : isRegistering ? (
-              <><UserPlus size={18} /> Criar Conta</>
-            ) : (
-              <><LogIn size={18} /> Entrar</>
-            )}
+            {isSubmitting ? <Loader2 className="animate-spin" /> : <><LogIn size={18} /> Entrar</>}
           </button>
         </Form>
-
-        <div className="login-footer">
-          <button onClick={() => setIsRegistering(!isRegistering)}>
-            {isRegistering ? "Já tem uma conta? Entre aqui" : "Não tem uma conta? Crie agora"}
-          </button>
-        </div>
       </div>
     </div>
   );

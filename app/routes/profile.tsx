@@ -34,7 +34,14 @@ export async function action({ request }: { request: Request }) {
   const actionType = formData.get("action");
 
   if (actionType === "updateAvatar") {
-    const avatarData = formData.get("avatar") as string;
+    const avatarData = formData.get("avatar");
+    if (
+      typeof avatarData !== "string" ||
+      avatarData.length > 500_000 ||
+      !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(avatarData)
+    ) {
+      return { success: false, message: "Imagem inválida." };
+    }
     await prisma.user.update({
       where: { id: userId },
       data: { avatarUrl: avatarData }
@@ -43,7 +50,10 @@ export async function action({ request }: { request: Request }) {
   }
 
   if (actionType === "updateName") {
-    const name = formData.get("name") as string;
+    const name = ((formData.get("name") as string) || "").trim();
+    if (!name || name.length > 100) {
+      return { success: false, message: "Nome inválido." };
+    }
     await prisma.user.update({
       where: { id: userId },
       data: { name }

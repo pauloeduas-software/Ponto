@@ -3,6 +3,14 @@ import type { Shift, User, Team, UserTeamMembership } from "../types";
 import { getCachedOrFetch, invalidateCache } from "../utils/cache.server";
 
 export async function getEscalaData(user: User, selectedTeamParam: string | null) {
+  const isMember = selectedTeamParam && (
+    user.teamId === selectedTeamParam ||
+    (user.userTeams || []).some(ut => ut.teamId === selectedTeamParam)
+  );
+  if (selectedTeamParam && user.role !== "admin" && !isMember) {
+    throw new Response("Acesso negado", { status: 403 });
+  }
+
   const cacheKey = `escala_data_${user.id}_${selectedTeamParam || 'none'}`;
 
   return getCachedOrFetch(cacheKey, async () => {

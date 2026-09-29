@@ -70,6 +70,19 @@ O **Ponto** é uma solução corporativa robusta para controle de jornada de tra
 
 ---
 
+## 🔌 Padrão de Portas
+
+| Serviço  | Porta | Variável no .env |
+| :------- | :---- | :--------------- |
+| Front    | 3000  | `FRONT_PORT`     |
+| Postgres | 3002  | `POSTGRES_PORT`  |
+
+> O Ponto roda front e back no mesmo servidor (React Router), por isso não há porta separada para o back.
+>
+> O `docker-compose.yml` não publica portas no host: o deploy é feito pelo Dokploy, que roteia o domínio direto para a porta 3000 do container `web`. As portas acima valem para rodar localmente.
+
+---
+
 ## 🏁 Primeiros Passos
 
 ### Instalação e Execução

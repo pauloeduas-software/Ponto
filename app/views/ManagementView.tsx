@@ -14,6 +14,9 @@ export function ManagementView({ teams, users }: ManagementViewProps) {
   const fetcher = useFetcher();
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [createUserError, setCreateUserError] = useState<string | null>(null);
+  const userFormRef = useRef<HTMLFormElement>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [passwordFeedback, setPasswordFeedback] = useState<{ success: boolean; message?: string; error?: string } | null>(null);
   const currentUser = users.find(u => u.id === editingUserId);
@@ -33,6 +36,14 @@ export function ManagementView({ teams, users }: ManagementViewProps) {
       const action = fetcher.data?.action;
       if (action === "deleteUser" && fetcher.data?.success) {
         setEditingUserId(null);
+      } else if (action === "createUser") {
+        if (fetcher.data?.success) {
+          userFormRef.current?.reset();
+          setCreateUserError(null);
+          setIsUserModalOpen(false);
+        } else {
+          setCreateUserError(fetcher.data?.error || null);
+        }
       } else if (action === "changePassword") {
         if (fetcher.data?.success) {
           passwordFormRef.current?.reset();
@@ -51,6 +62,9 @@ export function ManagementView({ teams, users }: ManagementViewProps) {
           <h1 className="page-title">Gestão de Usuários</h1>
         </div>
         <div className="page-topbar-right">
+          <button className="action-btn" onClick={() => { setCreateUserError(null); setIsUserModalOpen(true); }}>
+            <UserPlus size={16} /> Novo Usuário
+          </button>
           <button className="action-btn" onClick={() => setIsTeamModalOpen(true)}>
             <Plus size={16} /> Gerenciar Equipes
           </button>
@@ -92,6 +106,43 @@ export function ManagementView({ teams, users }: ManagementViewProps) {
         </div>
       </div>
     </div>
+
+      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} title="Novo Usuário" icon={<UserPlus size={28} />}>
+        <div className="settings-section">
+          <div className="settings-section-header">
+            <h3 className="settings-section-title">Dados de Acesso</h3>
+            <p className="settings-section-desc">O usuário será criado como Funcionário. Cargos por equipe podem ser ajustados depois.</p>
+          </div>
+          <fetcher.Form method="post" ref={userFormRef}>
+            <input type="hidden" name="_action" value="createUser" />
+            <div className="settings-card">
+              <div className="settings-card-row">
+                <input type="text" name="name" required placeholder="Nome completo" autoComplete="off" className="settings-input" />
+              </div>
+              <div className="settings-card-row">
+                <input type="text" name="username" required placeholder="Nome de usuário" autoComplete="off" className="settings-input" />
+              </div>
+              <div className="settings-card-row">
+                <input type="password" name="password" required minLength={8} placeholder="Senha (mín. 8 caracteres)" autoComplete="new-password" className="settings-input" />
+              </div>
+              <div className="settings-card-row">
+                <select name="teamId" className="settings-select" style={{ flex: 1 }}>
+                  <option value="">Sem equipe principal</option>
+                  {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+                <button type="submit" className="settings-btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                  {fetcher.state === "submitting" && fetcher.formData?.get("_action") === "createUser" ? "Criando..." : "Criar Usuário"}
+                </button>
+              </div>
+              {createUserError && (
+                <div className="settings-card-row" style={{ paddingTop: '8px', paddingBottom: '8px', background: 'rgba(0,0,0,0.2)' }}>
+                  <p className="password-feedback-error" style={{ margin: 0 }}>{createUserError}</p>
+                </div>
+              )}
+            </div>
+          </fetcher.Form>
+        </div>
+      </Modal>
 
       <Modal isOpen={isTeamModalOpen} onClose={() => setIsTeamModalOpen(false)} title="Gerenciar Equipes" icon={<Layers size={28} />}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -217,7 +268,7 @@ export function ManagementView({ teams, users }: ManagementViewProps) {
                 <input type="hidden" name="_action" value="changePassword" /><input type="hidden" name="userId" value={currentUser.id} />
                 <div className="settings-card">
                   <div className="settings-card-row">
-                    <input type="password" id="newPassword" name="newPassword" placeholder="Nova senha (mín. 4 caracteres)" autoComplete="new-password" required className="settings-input" />
+                    <input type="password" id="newPassword" name="newPassword" placeholder="Nova senha (mín. 8 caracteres)" minLength={8} autoComplete="new-password" required className="settings-input" />
                     <button type="submit" className="settings-btn-primary" style={{ whiteSpace: 'nowrap' }}>
                       {fetcher.state === "submitting" && fetcher.formData?.get("_action") === "changePassword" ? "Salvando..." : "Alterar Senha"}
                     </button>

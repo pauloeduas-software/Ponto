@@ -63,6 +63,32 @@ export async function getManagementData(user: User): Promise<{ teams: Team[]; us
 type ActionHandler = (formData: FormData) => Promise<{ success?: boolean; error?: string; message?: string; action?: string }>;
 
 const actionHandlers: Record<string, ActionHandler> = {
+  createUser: async (formData) => {
+    const name = ((formData.get("name") as string) || "").trim();
+    const username = ((formData.get("username") as string) || "").trim();
+    const password = (formData.get("password") as string) || "";
+    const teamId = (formData.get("teamId") as string) || null;
+
+    if (!/^[a-zA-Z0-9._-]{3,50}$/.test(username)) return { error: "Usuário deve ter 3 a 50 caracteres (letras, números, . _ -).", action: "createUser" };
+    if (!name || name.length > 100) return { error: "Preencha nome e usuário.", action: "createUser" };
+    if (password.length < 8) return { error: "A senha deve ter pelo menos 8 caracteres.", action: "createUser" };
+
+    const existing = await prisma.user.findUnique({ where: { username } });
+    if (existing) return { error: "Este usuário já existe.", action: "createUser" };
+
+    await prisma.user.create({
+      data: {
+        id: crypto.randomUUID(),
+        username,
+        password: await bcrypt.hash(password, 10),
+        name,
+        role: "employee",
+        teamId
+      }
+    });
+    return { success: true, message: "Usuário criado com sucesso!", action: "createUser" };
+  },
+
   createTeam: async (formData) => {
     const name = formData.get("name") as string;
     const existing = await prisma.team.findFirst({ where: { name } });
@@ -163,8 +189,8 @@ const actionHandlers: Record<string, ActionHandler> = {
     const userId = formData.get("userId") as string;
     const newPassword = formData.get("newPassword") as string;
     
-    if (!newPassword || newPassword.length < 4) {
-      return { error: "A senha deve ter pelo menos 4 caracteres.", action: "changePassword" };
+    if (!newPassword || newPassword.length < 8) {
+      return { error: "A senha deve ter pelo menos 8 caracteres.", action: "changePassword" };
     }
     
     const userExists = await prisma.user.findUnique({ where: { id: userId } });

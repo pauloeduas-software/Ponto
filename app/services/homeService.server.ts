@@ -1,6 +1,7 @@
 import { prisma } from "./prisma.server";
 import { requireUserId } from "./session.server";
-import { minutesToHHMM, timeToMinutes } from "../utils/time";
+import { minutesToHHMM } from "../utils/time";
+import { parsePunchPayload } from "../utils/validation.server";
 import { getCachedOrFetch, invalidateCache } from "../utils/cache.server";
 
 export async function getHomeData(request: Request) {
@@ -9,7 +10,10 @@ export async function getHomeData(request: Request) {
   const cacheKey = `home_data_${userId}_${dateStr}`;
 
   return getCachedOrFetch(cacheKey, async () => {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, name: true, role: true, goal: true, avatarUrl: true, teamId: true }
+    });
     const record = await prisma.punchRecord.findFirst({
       where: { userId, date: dateStr }
     });
@@ -26,14 +30,10 @@ export async function getHomeData(request: Request) {
 export async function saveHomePunchRecord(request: Request, formData: FormData) {
   const userId = await requireUserId(request);
 
-  const date = formData.get("date") as string;
-  const punches = formData.get("punches") as string;
-  const workMins = parseInt(formData.get("workMins") as string);
-  const diffMins = parseInt(formData.get("diffMins") as string);
-  const isOvertime = formData.get("isOvertime") === "true";
-  const goal = formData.get("goal") as string;
+  const payload = parsePunchPayload(formData);
+  if (!payload) return { error: "Dados inválidos." };
+  const { date, punches, workMins, diffMins, isOvertime, goal, goalMins } = payload;
 
-  const goalMins = timeToMinutes(goal);
   const existing = await prisma.punchRecord.findFirst({
     where: { userId, date }
   });
@@ -71,4 +71,5 @@ export async function saveHomePunchRecord(request: Request, formData: FormData) 
   });
   
   invalidateCache();
+  return { success: true };
 }

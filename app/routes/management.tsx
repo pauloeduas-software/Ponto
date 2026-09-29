@@ -11,7 +11,9 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export async function action({ request }: { request: Request }) {
+  await requireUserId(request);
   const user = await getUser(request) as User;
+  if (!user) throw new Response("Não autorizado", { status: 401 });
   const formData = await request.formData();
   return await handleManagementAction(user, formData);
 }

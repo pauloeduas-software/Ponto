@@ -8,8 +8,7 @@ export async function loader({ request }: { request: Request }) {
 
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
-  await saveHomePunchRecord(request, formData);
-  return { success: true };
+  return saveHomePunchRecord(request, formData);
 }
 
 export default function Home() {

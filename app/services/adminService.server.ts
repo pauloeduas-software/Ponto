@@ -10,6 +10,13 @@ export async function getAdminData(user: User, selectedManagerTeamId: string | n
 
   verifyAccess(isAdmin, isManager);
 
+  if (!isAdmin && selectedManagerTeamId && !managerTeams.some(t => t.teamId === selectedManagerTeamId)) {
+    throw new Response("Acesso negado", { status: 403 });
+  }
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(monthStr)) {
+    throw new Response("Mês inválido", { status: 400 });
+  }
+
   const activeTeamId = resolveActiveTeamId(user, managerTeams, selectedManagerTeamId);
 
   const { employeesData, records, teamName } = await fetchDashboardData(isAdmin, selectedManagerTeamId, activeTeamId, monthStr);
